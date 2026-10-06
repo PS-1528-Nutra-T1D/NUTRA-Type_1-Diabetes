@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GlucoPredict AI | Login</title>
+    <meta name="description" content="Sign in to GlucoPredict AI - Precision Blood Glucose Forecasting">
+    <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/822/822143.png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --primary-light: #6366f1;
+            --primary-hover: #3730a3;
+            --primary-bg: #eef2ff;
+            --accent: #06b6d4;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --white: #ffffff;
+            --danger: #ef4444;
+            --danger-bg: #fef2f2;
+            --success: #10b981;
+            --border: #e2e8f0;
+            --bg-page: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --card-bg: #ffffff;
+            --input-bg: #f8fafc;
+            --input-border: #e2e8f0;
+            --shadow-lg: 0 25px 50px rgba(79,70,229,0.15), 0 10px 25px rgba(0,0,0,0.1);
+            --radius: 20px;
+            --radius-sm: 12px;
+        }
+
+        [data-theme="dark"] {
+            --text-main: #f1f5f9;
+            --text-muted: #94a3b8;
+            --white: #1e293b;
+            --border: #334155;
+            --bg-page: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);
+            --card-bg: #1e293b;
+            --input-bg: #0f172a;
+            --input-border: #334155;
+            --primary-bg: #1e1b4b;
+            --shadow-lg: 0 25px 50px rgba(0,0,0,0.4);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            background: var(--bg-page);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem 1rem;
+            color: var(--text-main);
+            transition: background 0.3s;
+        }
+
+        /* ── Dark Mode Toggle ── */
+        .theme-toggle {
+            position: fixed;
+            top: 1.2rem;
+            right: 1.2rem;
+            z-index: 999;
+            background: rgba(255,255,255,0.15);
+            border: 1px solid rgba(255,255,255,0.25);
+            color: white;
+            width: 42px; height: 42px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1.1rem;
+            display: flex; align-items: center; justify-content: center;
+            backdrop-filter: blur(8px);
+            transition: all 0.2s;
+        }
+        .theme-toggle:hover { background: rgba(255,255,255,0.25); transform: scale(1.05); }
+
+        /* ── Card ── */
+        .card {
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-lg);
+            width: 100%;
+            max-width: 420px;
+            padding: 2.5rem 2rem;
+            animation: slideUp 0.5s cubic-bezier(0.16,1,0.3,1);
+        }
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(24px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ── Logo ── */
+        .logo-wrap {
+            display: flex; align-items: center; justify-content: center;
+            width: 68px; height: 68px;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            border-radius: 18px;
+            margin: 0 auto 1.2rem;
+            box-shadow: 0 8px 24px rgba(79,70,229,0.35);
+        }
+        .logo-wrap i { font-size: 1.8rem; color: white; }
+
+        h2 { text-align: center; font-size: 1.7rem; font-weight: 800; color: var(--text-main); letter-spacing: -0.5px; }
+        .subtitle { text-align: center; color: var(--text-muted); font-size: 0.9rem; margin-top: 0.3rem; margin-bottom: 2rem; }
+
+        /* ── Tabs ── */
+        .auth-tabs {
+            display: flex; gap: 4px;
+            background: var(--input-bg);
+            padding: 4px; border-radius: 12px;
+            margin-bottom: 1.8rem;
+            border: 1px solid var(--border);
+        }
+        .auth-tab {
+            flex: 1; padding: 8px;
+            border: none; background: transparent;
+            border-radius: 9px; cursor: pointer;
+            font-weight: 600; font-size: 0.9rem;
+            color: var(--text-muted); transition: all 0.2s;
+        }
+        .auth-tab.active {
+            background: var(--primary);
+            color: white;
+            box-shadow: 0 2px 8px rgba(79,70,229,0.3);
+        }
+
+        /* ── Form ── */
+        .form-group { margin-bottom: 1rem; }
+        label { display: block; font-size: 0.82rem; font-weight: 600; color: var(--text-muted); margin-bottom: 0.4rem; text-transform: uppercase; letter-spacing: 0.3px; }
+
+        .input-wrap {
+            position: relative;
+        }
+        .input-wrap i {
+            position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+            color: var(--text-muted); font-size: 0.95rem;
+        }
+        input[type="text"], input[type="email"], input[type="password"] {
+            width: 100%; padding: 0.75rem 0.9rem 0.75rem 2.6rem;
+            border: 1.5px solid var(--input-border);
+            border-radius: var(--radius-sm);
+            background: var(--input-bg);
+            color: var(--text-main);
+            font-size: 0.95rem;
+            font-family: inherit;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            outline: none;
+        }
+        input:focus {
+            border-color: var(--primary-light);
+            box-shadow: 0 0 0 3px rgba(79,70,229,0.12);
+        }
+
+        .password-toggle {
+            position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+            cursor: pointer; color: var(--text-muted); font-size: 0.9rem;
+            background: none; border: none;
+            transition: color 0.2s;
+        }
+        .password-toggle:hover { color: var(--primary); }
+
+        /* ── Remember / Forgot ── */
+        .flex-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; font-size: 0.85rem; }
+        .remember-wrap { display: flex; align-items: center; gap: 0.5rem; color: var(--text-muted); cursor: pointer; }
+        .remember-wrap input[type="checkbox"] { accent-color: var(--primary); cursor: pointer; }
+        .forgot-link { color: var(--primary); font-weight: 600; cursor: pointer; text-decoration: none; }
+        .forgot-link:hover { text-decoration: underline; }
+
+        /* ── Buttons ── */
+        .btn-primary {
+            width: 100%; padding: 0.9rem;
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            color: white; border: none; border-radius: var(--radius-sm);
+            font-size: 1rem; font-weight: 700; cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 4px 15px rgba(79,70,229,0.4);
+            display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+        }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(79,70,229,0.5); }
+        .btn-primary:disabled { opacity: 0.7; cursor: not-allowed; transform: none; }
+
+        /* ── Divider ── */
+        .divider { display: flex; align-items: center; gap: 0.8rem; margin: 1.3rem 0; }
+        .divider::before, .divider::after { content:''; flex:1; height:1px; background: var(--border); }
+        .divider span { font-size: 0.78rem; color: var(--text-muted); font-weight: 600; white-space: nowrap; }
+
+        /* ── Social Buttons ── */
+        .social-btn {
+            width: 100%; padding: 0.75rem;
+            border: 1.5px solid var(--border);
+            background: var(--card-bg); color: var(--text-main);
+            border-radius: var(--radius-sm);
+            font-size: 0.9rem; font-weight: 600; cursor: pointer;
+            transition: all 0.2s;
+            display: flex; align-items: center; justify-content: center; gap: 0.7rem;
+            font-family: inherit;
+            margin-bottom: 0.6rem;
+        }
+        .social-btn:hover { background: var(--input-bg); border-color: var(--primary-light); }
+        .social-btn img { width: 18px; height: 18px; }
+
+        /* ── Error / Success ── */
+        .alert {
+            padding: 0.75rem 1rem; border-radius: 10px;
+            font-size: 0.85rem; font-weight: 600;
+            display: none; align-items: center; gap: 0.6rem;
+            margin-bottom: 1rem;
+        }
+        .alert.error { background: var(--danger-bg); color: #b91c1c; border: 1px solid #fecaca; display: flex; }
+        .alert.success { background: #f0fdf4; color: #065f46; border: 1px solid #a7f3d0; display: flex; }
+
+        /* ── Password strength ── */
+        .strength-bar { height: 4px; border-radius: 2px; background: var(--border); margin-top: 0.4rem; overflow: hidden; display: none; }
+        .strength-fill { height: 100%; border-radius: 2px; transition: width 0.3s, background 0.3s; width: 0%; }
+        .strength-label { font-size: 0.73rem; color: var(--text-muted); margin-top: 0.3rem; display: none; }
+
+        /* ── Select (Diabetes Type) ── */
+        select {
+            width: 100%; padding: 0.75rem 0.9rem 0.75rem 2.6rem;
+            border: 1.5px solid var(--input-border);
+            border-radius: var(--radius-sm);
+            background: var(--input-bg);
+            color: var(--text-main);
+            font-size: 0.95rem;
+            font-family: inherit;
+            transition: border-color 0.2s;
+            outline: none;
+            appearance: none;
+            cursor: pointer;
+        }
+        select:focus { border-color: var(--primary-light); box-shadow: 0 0 0 3px rgba(79,70,229,0.12); }
+
+        /* ── Loader ── */
+        .loader { width: 18px; height: 18px; border: 2.5px solid rgba(255,255,255,0.4); border-top-color: white; border-radius: 50%; animation: spin 0.7s linear infinite; display: none; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ── Bottom text ── */
+        .bottom-text { text-align: center; font-size: 0.83rem; color: var(--text-muted); margin-top: 1.5rem; }
+        .bottom-text a { color: var(--primary); font-weight: 600; cursor: pointer; }
+
+        @media (max-width: 480px) {
+            .card { padding: 1.8rem 1.2rem; }
+            h2 { font-size: 1.4rem; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Dark Mode Toggle -->
+<button class="theme-toggle" onclick="toggleTheme()" title="Toggle dark mode" id="themeBtn">
+    <i class="fa-solid fa-moon" id="themeIcon"></i>
+</button>
+
+<div class="card">
+    <!-- Logo -->
+    <div class="logo-wrap"><i class="fa-solid fa-droplet"></i></div>
+    <h2>GlucoPredict AI</h2>
+    <p class="subtitle">Precision Blood Glucose Forecasting</p>
+
+    <!-- Tabs -->
+    <div class="auth-tabs">
+        <button class="auth-tab active" id="tab-login" onclick="switchTab('login')">
+            <i class="fa-solid fa-right-to-bracket"></i> Sign In
+        </button>
+        <button class="auth-tab" id="tab-signup" onclick="switchTab('signup')">
+            <i class="fa-solid fa-user-plus"></i> Sign Up
+        </button>
+    </div>
+
+    <!-- Alert -->
+    <div class="alert" id="alert">
+        <i class="fa-solid fa-circle-exclamation"></i>
+        <span id="alert-text"></span>
+    </div>
+
+    <!-- LOGIN FORM -->
+    <form id="login-form" onsubmit="handleLogin(event)">
+        <div class="form-group">
+            <label>Email Address</label>
+            <div class="input-wrap">
+                <i class="fa-solid fa-envelope"></i>
+                <input type="email" id="login-email" placeholder="you@example.com" autocomplete="email">
+            </div>
+        </div>
+        <div class="form-group">
+            <label>Password</label>
+            <div class="input-wrap">
+                <i class="fa-solid fa-lock"></i>
+                <input type="password" id="login-password" placeholder="Enter your password">
+                <button type="button" class="password-toggle" onclick="togglePassword('login-password', this)">
+                    <i class="fa-solid fa-eye"></i>
+                </button>
+            </div>
+        </div>
+        <div class="flex-row">
+            <label class="remember-wrap">
+                <input type="checkbox" id="remember"> Remember me
+            </label>
+            <a class="forgot-link" onclick="showForgot()">Forgot password?</a>
+        </div>
+        <button type="submit" class="btn-primary" id="login-btn">
+            <i class="fa-solid fa-right-to-bracket"></i>
+            <span id="login-btn-text">Sign In</span>
+            <span class="loader" id="login-loader"></span>
+        </button>
+
+        <div class="divider"><span>OR CONTINUE WITH</span></div>
+        <button type="button" class="social-btn" onclick="socialLogin('Google')">
+            <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google">
+            Continue with Google
+        </button>
+        <button type="button" class="social-btn" onclick="socialLogin('GitHub')">
+            <i class="fa-brands fa-github" style="font-size:1.1rem;"></i>
+            Continue with GitHub
+        </button>
+    </form>
+
+    <!-- SIGNUP FORM -->
+    <form id="signup-form" style="display:none;" onsubmit="handleSignup(event)">
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.8rem;">
+            <div class="form-group">
+                <label>First Name</label>
+                <div class="input-wrap">
+                    <i class="fa-solid fa-user"></i>
+                    <input type="text" id="signup-fname" placeholder="John">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Last Name</label>
+                <div class="input-wrap">
+                    <i class="fa-solid fa-user"></i>
+                    <input type="text" id="signup-lname" placeholder="Doe">
+                </div>
+            </div>
+        </div>
+        <div class="form-group">
+            <label>Email Address</label>
+            <div class="input-wrap">
+                <i class="fa-solid fa-envelope"></i>
+                <input type="email" id="signup-email" placeholder="you@example.com" autocomplete="email">
+            </div>
+        </div>
+        <div class="form-group">
+            <label>Diabetes Type</label>
+            <div class="input-wrap">
+                <i class="fa-solid fa-notes-medical"></i>
+                <select id="signup-type">
+                    <option value="">Select your type…</option>
+                    <option value="type1">Type 1 Diabetes</option>
+                    <option value="type2">Type 2 Diabetes</option>
+                    <option value="prediabetes">Pre-Diabetes</option>
+                    <option value="gestational">Gestational Diabetes</option>
+                    <option value="other">Other / Research</option>
+                </select>
+            </div>
+        </div>
+        <div class="form-group">
+            <label>Password</label>
+            <div class="input-wrap">
+                <i class="fa-solid fa-lock"></i>
+                <input type="password" id="signup-password" placeholder="Create a strong password" oninput="checkStrength(this.value)">
+                <button type="button" class="password-toggle" onclick="togglePassword('signup-password', this)">
+                    <i class="fa-solid fa-eye"></i>
+                </button>
+            </div>
+            <div class="strength-bar" id="strength-bar"><div class="strength-fill" id="strength-fill"></div></div>
+            <div class="strength-label" id="strength-label"></div>
+        </div>
+        <div class="form-group">
+            <label>Confirm Password</label>
+            <div class="input-wrap">
+                <i class="fa-solid fa-lock"></i>
+                <input type="password" id="signup-confirm" placeholder="Repeat your password">
+            </div>
+        </div>
+        <button type="submit" class="btn-primary" id="signup-btn">
+            <i class="fa-solid fa-user-plus"></i>
+            <span id="signup-btn-text">Create Account</span>
+            <span class="loader" id="signup-loader"></span>
+        </button>
+        <p class="bottom-text" style="margin-top:1rem; font-size:0.78rem;">
+            By signing up, you agree to our
+            <a href="#" onclick="return false;">Terms of Service</a> and
+            <a href="#" onclick="return false;">Privacy Policy</a>.
+        </p>
+    </form>
+</div>
+
+<script>
+    // ── Theme ──────────────────────────────────────────────────────
+    function toggleTheme() {
+        const html = document.documentElement;
+        const isDark = html.getAttribute('data-theme') === 'dark';
+        html.setAttribute('data-theme', isDark ? 'light' : 'dark');
+        document.getElementById('themeIcon').className = isDark ? 'fa-solid fa-moon' : 'fa-solid fa-sun';
+        localStorage.setItem('glucoTheme', isDark ? 'light' : 'dark');
+    }
+    // Load saved theme
+    const savedTheme = localStorage.getItem('glucoTheme') || 'light';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+    document.getElementById('themeIcon').className = savedTheme === 'dark' ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+
+    // ── Tab Switching ──────────────────────────────────────────────
+    function switchTab(tab) {
+        const isLogin = tab === 'login';
+        document.getElementById('login-form').style.display  = isLogin ? 'block' : 'none';
+        document.getElementById('signup-form').style.display = isLogin ? 'none'  : 'block';
+        document.getElementById('tab-login').classList.toggle('active', isLogin);
+        document.getElementById('tab-signup').classList.toggle('active', !isLogin);
+        clearAlert();
+    }
+
+    // ── Alert ──────────────────────────────────────────────────────
+    function showAlert(msg, type = 'error') {
+        const el = document.getElementById('alert');
+        const icon = el.querySelector('i');
+        el.className = `alert ${type}`;
+        icon.className = type === 'error' ? 'fa-solid fa-circle-exclamation' : 'fa-solid fa-circle-check';
+        document.getElementById('alert-text').innerText = msg;
+    }
+    function clearAlert() { document.getElementById('alert').className = 'alert'; }
+
+    // ── Password toggle ───────────────────────────────────────────
+    function togglePassword(id, btn) {
+        const input = document.getElementById(id);
+        const isText = input.type === 'text';
+        input.type = isText ? 'password' : 'text';
+        btn.querySelector('i').className = isText ? 'fa-solid fa-eye' : 'fa-solid fa-eye-slash';
+    }
+
+    // ── Password strength ─────────────────────────────────────────
+    function checkStrength(val) {
+        const bar  = document.getElementById('strength-bar');
+        const fill = document.getElementById('strength-fill');
+        const lbl  = document.getElementById('strength-label');
+        bar.style.display = lbl.style.display = val ? 'block' : 'none';
+
+        let score = 0;
+        if (val.length >= 8)  score++;
+        if (/[A-Z]/.test(val)) score++;
+        if (/[0-9]/.test(val)) score++;
+        if (/[^A-Za-z0-9]/.test(val)) score++;
+
+        const configs = [
+            { pct:'25%', color:'#ef4444', text:'Weak' },
+            { pct:'50%', color:'#f59e0b', text:'Fair' },
+            { pct:'75%', color:'#3b82f6', text:'Good' },
+            { pct:'100%',color:'#10b981', text:'Strong 💪' }
+        ];
+        const cfg = configs[score - 1] || configs[0];
+        fill.style.width = cfg.pct;
+        fill.style.background = cfg.color;
+        lbl.innerText = `Password strength: ${cfg.text}`;
+        lbl.style.color = cfg.color;
+    }
+
+    // ── Login ─────────────────────────────────────────────────────
+    async function handleLogin(e) {
+        e.preventDefault();
+        clearAlert();
+        const email = document.getElementById('login-email').value.trim();
+        const pass  = document.getElementById('login-password').value;
+        const remember = document.getElementById('remember').checked;
+
+        if (!email || !pass) { showAlert('Please fill in all fields.'); return; }
+        if (!isValidEmail(email)) { showAlert('Please enter a valid email address.'); return; }
+
+        setLoading('login', true);
+        await fakeDelay(1200);
+
+        // Demo: check localStorage for registered user
+        const users = JSON.parse(localStorage.getItem('glucoUsers') || '[]');
+        const user  = users.find(u => u.email === email && u.password === btoa(pass));
+
+        if (user) {
+            const sessionData = { name: user.name, email: user.email, diabetesType: user.diabetesType, loggedIn: true };
+            if (remember) localStorage.setItem('glucoSession', JSON.stringify(sessionData));
+            else sessionStorage.setItem('glucoSession', JSON.stringify(sessionData));
+            showAlert('Welcome back, ' + user.name.split(' ')[0] + '! Redirecting…', 'success');
+            setTimeout(() => window.location.href = 'index.html', 1200);
+        } else {
+            // Demo fallback — allow demo@gluco.ai / demo1234
+            if (email === 'demo@gluco.ai' && pass === 'demo1234') {
+                const demo = { name: 'Demo User', email, diabetesType: 'type1', loggedIn: true };
+                sessionStorage.setItem('glucoSession', JSON.stringify(demo));
+                showAlert('Demo login successful! Redirecting…', 'success');
+                setTimeout(() => window.location.href = 'index.html', 1200);
+            } else {
+                showAlert('Invalid email or password. Try demo@gluco.ai / demo1234');
+            }
+        }
+        setLoading('login', false);
+    }
+
+    // ── Signup ────────────────────────────────────────────────────
+    async function handleSignup(e) {
+        e.preventDefault();
+        clearAlert();
+        const fname  = document.getElementById('signup-fname').value.trim();
+        const lname  = document.getElementById('signup-lname').value.trim();
+        const email  = document.getElementById('signup-email').value.trim();
+        const type   = document.getElementById('signup-type').value;
+        const pass   = document.getElementById('signup-password').value;
+        const conf   = document.getElementById('signup-confirm').value;
+
+        if (!fname || !lname || !email || !type || !pass || !conf) { showAlert('Please fill in all fields.'); return; }
+        if (!isValidEmail(email)) { showAlert('Please enter a valid email address.'); return; }
+        if (pass.length < 8) { showAlert('Password must be at least 8 characters.'); return; }
+        if (pass !== conf)   { showAlert('Passwords do not match.'); return; }
+
+        setLoading('signup', true);
+        await fakeDelay(1400);
+
+        const users = JSON.parse(localStorage.getItem('glucoUsers') || '[]');
+        if (users.find(u => u.email === email)) { showAlert('An account with this email already exists.'); setLoading('signup', false); return; }
+
+        users.push({ name: fname + ' ' + lname, email, password: btoa(pass), diabetesType: type, createdAt: new Date().toISOString() });
+        localStorage.setItem('glucoUsers', JSON.stringify(users));
+
+        const sessionData = { name: fname + ' ' + lname, email, diabetesType: type, loggedIn: true };
+        sessionStorage.setItem('glucoSession', JSON.stringify(sessionData));
+        showAlert('Account created! Welcome, ' + fname + '! Redirecting…', 'success');
+        setTimeout(() => window.location.href = 'index.html', 1400);
+        setLoading('signup', false);
+    }
+
+    // ── Helpers ───────────────────────────────────────────────────
+    function setLoading(form, on) {
+        document.getElementById(form + '-btn').disabled = on;
+        document.getElementById(form + '-loader').style.display = on ? 'inline-block' : 'none';
+        document.getElementById(form + '-btn-text').style.opacity = on ? '0.7' : '1';
+    }
+    function isValidEmail(e) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e); }
+    function fakeDelay(ms) { return new Promise(r => setTimeout(r, ms)); }
+    function showForgot() { showAlert('Password reset link would be sent to your email. (Demo mode)', 'success'); }
+    function socialLogin(provider) { showAlert(`${provider} login coming soon! Use email/password for now.`, 'success'); }
+
+    // ── Auto-redirect if already logged in ────────────────────────
+    const session = JSON.parse(localStorage.getItem('glucoSession') || sessionStorage.getItem('glucoSession') || 'null');
+    if (session && session.loggedIn) window.location.href = 'index.html';
+</script>
+</body>
+</html>

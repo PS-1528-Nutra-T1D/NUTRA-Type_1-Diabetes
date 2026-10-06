@@ -1,0 +1,998 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- SEO & Meta Tags -->
+    <title>GlucoPredict AI | Precision Blood Glucose Forecasting</title>
+    <meta name="description" content="AI-powered blood glucose prediction based on CGM and Heart Rate data. Get accurate 30, 60, and 120 minute forecasts.">
+    <meta name="keywords" content="Glucose Prediction, T1D, CGM, Health AI, Diabetes Management">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/822/822143.png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+    <style>
+        /* ══════════════════════════════════════════════════════════
+           DESIGN TOKENS
+        ══════════════════════════════════════════════════════════ */
+        :root {
+            --primary: #4f46e5;
+            --primary-light: #6366f1;
+            --primary-hover: #3730a3;
+            --primary-bg: #eef2ff;
+            --secondary: #f8fafc;
+            --accent: #06b6d4;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --white: #ffffff;
+            --danger: #ef4444;
+            --danger-bg: #fef2f2;
+            --success: #10b981;
+            --success-bg: #f0fdf4;
+            --warning: #f59e0b;
+            --warning-bg: #fffbeb;
+            --border: #e2e8f0;
+            --bg-body: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --card-bg: #ffffff;
+            --input-bg: #f8fafc;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.07);
+            --shadow: 0 10px 40px rgba(79,70,229,0.12), 0 4px 15px rgba(0,0,0,0.08);
+            --shadow-lg: 0 25px 50px rgba(79,70,229,0.15), 0 10px 25px rgba(0,0,0,0.1);
+            --radius: 20px;
+            --radius-sm: 12px;
+        }
+
+        /* ── Dark Mode ── */
+        [data-theme="dark"] {
+            --primary-bg: #1e1b4b;
+            --secondary: #0f172a;
+            --text-main: #f1f5f9;
+            --text-muted: #94a3b8;
+            --white: #1e293b;
+            --border: #334155;
+            --bg-body: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);
+            --card-bg: #1e293b;
+            --input-bg: #0f172a;
+            --shadow-lg: 0 25px 50px rgba(0,0,0,0.4);
+            --danger-bg: rgba(239,68,68,0.15);
+            --success-bg: rgba(16,185,129,0.12);
+            --warning-bg: rgba(245,158,11,0.12);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background: var(--bg-body);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 0 0 3rem;
+            color: var(--text-main);
+            line-height: 1.6;
+            transition: background 0.3s;
+        }
+
+        /* ══════════════════════════════════════════════════════════
+           NAVBAR
+        ══════════════════════════════════════════════════════════ */
+        .navbar {
+            width: 100%;
+            padding: 0 2rem;
+            height: 64px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(255,255,255,0.15);
+            position: sticky;
+            top: 0;
+            z-index: 200;
+            gap: 1rem;
+        }
+        .nav-brand {
+            display: flex; align-items: center; gap: 10px;
+            font-weight: 800; font-size: 1.1rem; color: white;
+            text-decoration: none;
+        }
+        .nav-logo {
+            width: 36px; height: 36px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            border: 1px solid rgba(255,255,255,0.3);
+        }
+        .nav-logo i { color: white; font-size: 1rem; }
+
+        .nav-right { display: flex; align-items: center; gap: 0.7rem; }
+        .nav-btn {
+            padding: 7px 16px;
+            border-radius: 10px;
+            font-size: 0.85rem; font-weight: 600;
+            cursor: pointer; border: none;
+            font-family: inherit; transition: all 0.2s;
+            display: flex; align-items: center; gap: 6px;
+        }
+        .nav-btn-ghost {
+            background: rgba(255,255,255,0.1);
+            color: white;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        .nav-btn-ghost:hover { background: rgba(255,255,255,0.2); }
+        .nav-btn-solid {
+            background: white;
+            color: var(--primary);
+        }
+        .nav-btn-solid:hover { background: rgba(255,255,255,0.9); }
+        .nav-avatar {
+            width: 36px; height: 36px; border-radius: 50%;
+            background: rgba(255,255,255,0.25);
+            border: 2px solid rgba(255,255,255,0.5);
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 800; font-size: 0.85rem; color: white;
+            cursor: pointer; transition: transform 0.2s;
+            text-decoration: none; overflow: hidden;
+        }
+        .nav-avatar:hover { transform: scale(1.08); }
+
+        /* Hamburger */
+        .hamburger {
+            display: none; flex-direction: column; gap: 5px;
+            cursor: pointer; padding: 6px; border: none;
+            background: rgba(255,255,255,0.1); border-radius: 8px;
+        }
+        .hamburger span { width: 22px; height: 2px; background: white; border-radius: 2px; transition: all 0.3s; }
+        .hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+        .hamburger.open span:nth-child(2) { opacity: 0; }
+        .hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+        .mobile-menu {
+            display: none; position: fixed; top: 64px; left: 0; right: 0;
+            background: rgba(30,27,75,0.96); backdrop-filter: blur(12px);
+            padding: 1rem; z-index: 199; flex-direction: column; gap: 0.5rem;
+        }
+        .mobile-menu.open { display: flex; }
+        .mobile-menu .nav-btn { width: 100%; justify-content: center; }
+
+        /* ══════════════════════════════════════════════════════════
+           PAGE WRAP
+        ══════════════════════════════════════════════════════════ */
+        .page-wrap {
+            display: flex; flex-direction: column; align-items: center;
+            gap: 1rem; width: 100%; max-width: 660px;
+            padding: 2rem 1rem 0;
+        }
+
+        /* ── Status Banner ── */
+        #status-banner {
+            width: 100%; padding: 0.65rem 1.2rem;
+            border-radius: 12px; font-size: 0.85rem; font-weight: 600;
+            display: flex; align-items: center; gap: 0.6rem;
+            transition: all 0.3s ease; box-shadow: var(--shadow-sm);
+        }
+        #status-banner.offline  { background: var(--danger-bg);  color: #b91c1c; border: 1px solid #fecaca; }
+        #status-banner.online   { background: var(--success-bg); color: #065f46; border: 1px solid #a7f3d0; }
+        #status-banner.checking { background: var(--warning-bg); color: #92400e; border: 1px solid #fde68a; }
+        #status-banner .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+        #status-banner.offline  .dot { background: var(--danger); }
+        #status-banner.online   .dot { background: var(--success); animation: pulse-dot 1.5s infinite; }
+        #status-banner.checking .dot { background: var(--warning); }
+        @keyframes pulse-dot {
+            0%,100% { opacity:1; transform:scale(1); }
+            50%      { opacity:0.5; transform:scale(0.8); }
+        }
+
+        /* ── Main Card ── */
+        .container {
+            background: var(--card-bg);
+            padding: 2.5rem 2rem;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-lg);
+            width: 100%;
+            animation: slideUp 0.5s cubic-bezier(0.16,1,0.3,1);
+            transition: background 0.3s;
+        }
+        @keyframes slideUp {
+            from { opacity:0; transform:translateY(24px); }
+            to   { opacity:1; transform:translateY(0); }
+        }
+
+        /* ── Header ── */
+        .header { text-align: center; margin-bottom: 2rem; }
+        .logo-wrap {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 72px; height: 72px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+            border-radius: 20px; margin-bottom: 1.2rem;
+            box-shadow: 0 8px 24px rgba(79,70,229,0.35);
+        }
+        .logo-wrap i { font-size: 2rem; color: white; }
+        h2 { font-size: 1.85rem; font-weight: 800; color: var(--text-main); letter-spacing: -0.5px; }
+        .subtitle { color: var(--text-muted); font-size: 0.95rem; margin-top: 0.4rem; }
+        .badge-row { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-top: 1rem; }
+        .badge {
+            display: inline-flex; align-items: center; gap: 5px;
+            background: var(--primary-bg); color: var(--primary);
+            padding: 5px 12px; border-radius: 20px;
+            font-size: 0.75rem; font-weight: 700; border: 1px solid #c7d2fe;
+        }
+
+        /* ── Upload Area ── */
+        .upload-area {
+            display: block; border: 2px dashed var(--border);
+            border-radius: var(--radius-sm); padding: 2rem 1.5rem;
+            text-align: center; transition: all 0.2s ease;
+            cursor: pointer; background: var(--secondary); margin-bottom: 1rem;
+        }
+        .upload-area:hover, .upload-area.drag-over {
+            border-color: var(--primary-light); background: var(--primary-bg);
+        }
+        .upload-area .upload-icon {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 52px; height: 52px; background: var(--primary-bg);
+            border-radius: 14px; margin-bottom: 0.8rem;
+        }
+        .upload-area .upload-icon i { font-size: 1.5rem; color: var(--primary); }
+        .upload-area .file-label { font-weight: 700; font-size: 1rem; color: var(--text-main); display: block; margin-bottom: 0.3rem; }
+        .upload-area .file-hint  { font-size: 0.8rem; color: var(--text-muted); }
+        .upload-area .file-selected { font-size: 0.85rem; color: var(--primary); font-weight: 600; margin-top: 0.5rem; display: none; }
+        #csvFile { display: none; }
+
+        /* ── Alert threshold info ── */
+        .threshold-banner {
+            background: var(--primary-bg);
+            border: 1px solid #c7d2fe;
+            border-radius: 10px;
+            padding: 0.7rem 1rem;
+            font-size: 0.82rem;
+            color: var(--primary);
+            display: flex; align-items: center; gap: 0.6rem;
+            margin-bottom: 1rem;
+        }
+        [data-theme="dark"] .threshold-banner { border-color: rgba(99,102,241,0.3); }
+
+        /* ── Info Row ── */
+        .info-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1.2rem; }
+        .info-card {
+            background: var(--secondary); border-radius: var(--radius-sm);
+            padding: 0.85rem 1rem; border: 1px solid var(--border);
+            display: flex; align-items: flex-start; gap: 0.7rem;
+        }
+        .info-card i { font-size: 1.1rem; color: var(--primary); margin-top: 1px; }
+        .info-card .info-title { font-size: 0.75rem; font-weight: 700; color: var(--text-main); }
+        .info-card .info-desc  { font-size: 0.72rem; color: var(--text-muted); margin-top: 1px; }
+
+        /* ── Predict Button ── */
+        .btn-predict {
+            width: 100%; padding: 1rem 1.5rem;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+            color: white; border: none; border-radius: var(--radius-sm);
+            cursor: pointer; font-size: 1rem; font-weight: 700;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 15px rgba(79,70,229,0.4);
+            display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+            letter-spacing: 0.3px; font-family: inherit;
+        }
+        .btn-predict:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(79,70,229,0.5); }
+        .btn-predict:disabled { opacity: 0.7; cursor: not-allowed; transform: none; }
+        .loader { width: 18px; height: 18px; border: 2.5px solid rgba(255,255,255,0.4); border-top-color: white; border-radius: 50%; animation: spin 0.7s linear infinite; display: none; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ── Results ── */
+        #results { margin-top: 2rem; display: none; }
+        .results-header { font-size: 0.8rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 1rem; }
+
+        /* ── Result actions ── */
+        .result-actions { display: flex; gap: 0.6rem; justify-content: flex-end; margin-bottom: 1rem; }
+        .action-btn {
+            padding: 6px 14px; border-radius: 8px; font-size: 0.8rem; font-weight: 600;
+            cursor: pointer; border: 1.5px solid var(--border);
+            background: var(--secondary); color: var(--text-muted);
+            font-family: inherit; transition: all 0.2s;
+            display: flex; align-items: center; gap: 0.4rem;
+        }
+        .action-btn:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-bg); }
+
+        /* ── Tabs ── */
+        .tabs { display: flex; gap: 6px; background: var(--secondary); padding: 5px; border-radius: 12px; margin-bottom: 1.2rem; border: 1px solid var(--border); }
+        .tab-btn {
+            flex: 1; padding: 8px 12px; border: none; background: transparent;
+            border-radius: 9px; cursor: pointer; font-weight: 600; font-size: 0.88rem;
+            color: var(--text-muted); transition: all 0.2s; font-family: inherit;
+        }
+        .tab-btn.active { background: var(--card-bg); color: var(--primary); box-shadow: var(--shadow-sm); }
+
+        /* ── Timeline ── */
+        .timeline { display: flex; flex-direction: column; gap: 6px; max-height: 220px; overflow-y: auto; padding-right: 2px; }
+        .timeline::-webkit-scrollbar { width: 4px; }
+        .timeline::-webkit-scrollbar-track { background: var(--border); border-radius: 4px; }
+        .timeline::-webkit-scrollbar-thumb { background: var(--primary-light); border-radius: 4px; }
+        .timeline-item {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 10px 14px; background: var(--secondary); border-radius: 10px;
+            border-left: 3px solid var(--primary); font-size: 0.9rem; transition: background 0.15s;
+        }
+        .timeline-item:hover { background: var(--primary-bg); }
+        .time-label { color: var(--text-muted); font-weight: 500; }
+        .val-label { font-weight: 700; color: var(--text-main); font-size: 0.95rem; display: flex; align-items: center; gap: 6px; }
+        .val-label.high   { color: var(--danger); }
+        .val-label.low    { color: var(--warning); }
+        .val-label.normal { color: var(--success); }
+
+        /* ── Chart ── */
+        .chart-wrap {
+            margin-top: 1.2rem;
+            background: var(--secondary);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 1rem;
+        }
+        .chart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.8rem; }
+        .chart-title { font-size: 0.8rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+
+        /* ── Feeling Card ── */
+        .feeling-container {
+            background: linear-gradient(135deg, var(--primary-bg) 0%, #f0f4ff 100%);
+            border-radius: var(--radius-sm); padding: 1.2rem 1.4rem;
+            border: 1px solid #c7d2fe; display: flex; gap: 1rem;
+            align-items: flex-start; margin-top: 1.2rem;
+        }
+        [data-theme="dark"] .feeling-container { background: var(--primary-bg); border-color: rgba(99,102,241,0.3); }
+        .feeling-icon { width: 40px; height: 40px; background: var(--primary); border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .feeling-icon i { color: white; font-size: 1rem; }
+        .feeling-title { font-size: 0.75rem; font-weight: 700; color: var(--primary); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.3rem; }
+        #feeling { font-size: 0.9rem; color: var(--text-main); line-height: 1.6; }
+
+        /* ── Alert highlight for out-of-range ── */
+        .alert-strip {
+            display: none; margin-top: 1rem; padding: 0.8rem 1.1rem;
+            border-radius: 10px; font-size: 0.85rem; font-weight: 600;
+            align-items: center; gap: 0.6rem;
+        }
+        .alert-strip.danger { background: var(--danger-bg); color: #b91c1c; border: 1px solid #fecaca; display: flex; }
+        .alert-strip.warning { background: var(--warning-bg); color: #92400e; border: 1px solid #fde68a; display: flex; }
+
+        /* ── Offline Helper ── */
+        .offline-helper {
+            background: var(--danger-bg); border: 1px solid #fecaca;
+            border-radius: var(--radius-sm); padding: 1.2rem 1.4rem;
+            margin-top: 1.5rem; display: none;
+        }
+        .offline-helper h4 { color: #b91c1c; font-size: 0.9rem; margin-bottom: 0.6rem; display: flex; align-items: center; gap: 0.5rem; }
+        .offline-helper code { display: block; background: #1e293b; color: #e2e8f0; padding: 0.7rem 1rem; border-radius: 8px; font-size: 0.82rem; font-family: 'Courier New', monospace; margin-top: 0.5rem; user-select: all; }
+        .offline-helper p { font-size: 0.82rem; color: #7f1d1d; margin-top: 0.5rem; line-height: 1.5; }
+
+        /* ── Footer ── */
+        .footer-links { margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--border); text-align: center; font-size: 0.8rem; color: var(--text-muted); display: flex; align-items: center; justify-content: center; gap: 0.5rem; flex-wrap: wrap; }
+        .footer-links a { color: var(--primary); text-decoration: none; cursor: pointer; font-weight: 500; }
+        .footer-links a:hover { text-decoration: underline; }
+        .footer-links .divider { color: var(--border); }
+
+        /* ── Cookie Banner ── */
+        #cookie-banner { position: fixed; bottom: 0; left: 0; right: 0; background: #0f172a; color: #cbd5e1; padding: 0.9rem 2rem; display: flex; justify-content: space-between; align-items: center; z-index: 1000; font-size: 0.85rem; gap: 1rem; box-shadow: 0 -4px 20px rgba(0,0,0,0.3); }
+        .cookie-btn { background: var(--primary); color: white; border: none; padding: 8px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 0.85rem; white-space: nowrap; }
+        .cookie-btn:hover { background: var(--primary-hover); }
+
+        /* ── Modals ── */
+        .modal { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(15,23,42,0.6); backdrop-filter: blur(4px); z-index: 2000; justify-content: center; align-items: center; padding: 1rem; }
+        .modal.open { display: flex; }
+        .modal-content { background: var(--card-bg); padding: 2rem; border-radius: var(--radius); max-width: 480px; width: 100%; max-height: 80vh; overflow-y: auto; position: relative; animation: slideUp 0.3s ease; }
+        .modal-content h3 { font-size: 1.2rem; margin-bottom: 1rem; color: var(--text-main); }
+        .modal-content p { font-size: 0.9rem; color: var(--text-muted); line-height: 1.7; }
+        .close-modal { position: absolute; top: 1rem; right: 1rem; cursor: pointer; font-size: 1.4rem; color: var(--text-muted); background: var(--secondary); border-radius: 8px; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; transition: background 0.15s; border: none; }
+        .close-modal:hover { background: var(--border); }
+
+        /* ── Toast ── */
+        .toast { position: fixed; bottom: 1.5rem; right: 1.5rem; background: var(--success); color: white; padding: 0.8rem 1.4rem; border-radius: 12px; font-size: 0.88rem; font-weight: 600; box-shadow: 0 8px 24px rgba(0,0,0,0.2); display: flex; align-items: center; gap: 0.6rem; z-index: 9999; transform: translateY(80px); opacity: 0; transition: all 0.3s ease; }
+        .toast.show { transform: translateY(0); opacity: 1; }
+
+        /* ── Responsive ── */
+        @media (max-width: 600px) {
+            .container { padding: 1.5rem 1.2rem; }
+            .info-row  { grid-template-columns: 1fr; }
+            h2 { font-size: 1.5rem; }
+            #cookie-banner { flex-direction: column; text-align: center; }
+            .hamburger { display: flex; }
+            .nav-right .nav-btn, .nav-right .nav-avatar { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════
+     NAVBAR
+═══════════════════════════════════════════════════════════ -->
+<nav class="navbar">
+    <a class="nav-brand" href="index.html">
+        <div class="nav-logo"><i class="fa-solid fa-droplet"></i></div>
+        GlucoPredict AI
+    </a>
+    <div class="nav-right">
+        <button class="nav-btn nav-btn-ghost" onclick="toggleTheme()" id="themeBtn" title="Toggle dark mode">
+            <i class="fa-solid fa-moon" id="themeIcon"></i>
+        </button>
+        <a class="nav-btn nav-btn-ghost" href="profile.html" id="profileLink" style="display:none; text-decoration:none;">
+            <i class="fa-solid fa-user"></i> Profile
+        </a>
+        <div class="nav-avatar" id="navAvatarEl" style="display:none;" onclick="window.location='profile.html'">
+            <span id="navInitials">?</span>
+        </div>
+        <button class="nav-btn nav-btn-solid" id="loginBtn" onclick="window.location='login.html'">
+            <i class="fa-solid fa-right-to-bracket"></i> Sign In
+        </button>
+    </div>
+    <!-- Mobile hamburger -->
+    <button class="hamburger" id="hamburger" onclick="toggleMobileMenu()" aria-label="Menu">
+        <span></span><span></span><span></span>
+    </button>
+</nav>
+
+<!-- Mobile Menu -->
+<div class="mobile-menu" id="mobileMenu">
+    <button class="nav-btn nav-btn-ghost" onclick="toggleTheme(); toggleMobileMenu()">
+        <i class="fa-solid fa-moon" id="mobileThemeIcon"></i> Toggle Dark Mode
+    </button>
+    <a class="nav-btn nav-btn-ghost" href="profile.html" id="mobileProfileLink" style="display:none; text-decoration:none; text-align:center;">
+        <i class="fa-solid fa-user"></i> My Profile
+    </a>
+    <button class="nav-btn nav-btn-solid" id="mobileLoginBtn" onclick="window.location='login.html'">
+        <i class="fa-solid fa-right-to-bracket"></i> Sign In
+    </button>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     PAGE CONTENT
+═══════════════════════════════════════════════════════════ -->
+<div class="page-wrap">
+
+    <!-- Backend Status Banner -->
+    <div id="status-banner" class="checking">
+        <span class="dot"></span>
+        <span id="status-text">Checking backend connection…</span>
+    </div>
+
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="logo-wrap"><i class="fa-solid fa-droplet"></i></div>
+            <h2>GlucoPredict AI</h2>
+            <p class="subtitle">Precision Blood Glucose Forecasting · Powered by Transformer AI</p>
+            <div class="badge-row">
+                <span class="badge"><i class="fa-solid fa-bolt"></i> &lt; 2s Response</span>
+                <span class="badge"><i class="fa-solid fa-shield-halved"></i> Privacy First</span>
+                <span class="badge"><i class="fa-solid fa-brain"></i> Transformer Model</span>
+            </div>
+        </div>
+
+        <!-- Input Section -->
+        <div id="input-section">
+
+            <!-- Alert threshold info (shows if logged in with custom thresholds) -->
+            <div class="threshold-banner" id="threshold-banner" style="display:none;">
+                <i class="fa-solid fa-sliders"></i>
+                <span id="threshold-text">Using your custom alert thresholds from profile.</span>
+            </div>
+
+            <label for="csvFile" class="upload-area" id="upload-area"
+                   ondragover="handleDrag(event, true)" ondragleave="handleDrag(event, false)" ondrop="handleDrop(event)">
+                <div class="upload-icon"><i class="fa-solid fa-cloud-arrow-up"></i></div>
+                <span class="file-label" id="file-name">Upload Your Glucose CSV</span>
+                <span class="file-hint">Drag &amp; drop or click to browse</span>
+                <span class="file-selected" id="file-selected"></span>
+                <input type="file" id="csvFile" accept=".csv">
+            </label>
+
+            <div class="info-row">
+                <div class="info-card">
+                    <i class="fa-solid fa-table-columns"></i>
+                    <div>
+                        <div class="info-title">Required Columns</div>
+                        <div class="info-desc">GlucoseCGM &amp; HR (Heart Rate)</div>
+                    </div>
+                </div>
+                <div class="info-card">
+                    <i class="fa-solid fa-clock-rotate-left"></i>
+                    <div>
+                        <div class="info-title">Minimum Rows</div>
+                        <div class="info-desc">At least 12 rows (60 minutes data)</div>
+                    </div>
+                </div>
+            </div>
+
+            <button class="btn-predict" id="predictBtn" onclick="predict()">
+                <i class="fa-solid fa-wand-magic-sparkles"></i>
+                <span id="btn-text">Predict Future Trends</span>
+                <span id="loader" class="loader"></span>
+            </button>
+
+            <!-- Offline Helper -->
+            <div class="offline-helper" id="offline-helper">
+                <h4><i class="fa-solid fa-terminal"></i> Backend Not Running</h4>
+                <p>Start the backend server by running this command in your terminal inside the <strong>glucose_predictor</strong> folder:</p>
+                <code>uvicorn app:app --reload --port 8000</code>
+                <p style="margin-top:0.8rem;">Make sure packages are installed: <code style="display:inline; background:#fde8e8; color:#9b1c1c; padding:2px 6px; border-radius:4px; font-size:0.8rem;">pip install fastapi uvicorn torch joblib pandas scikit-learn</code></p>
+            </div>
+        </div>
+
+        <!-- Results Section -->
+        <div id="results">
+            <div class="results-header"><i class="fa-solid fa-chart-line" style="margin-right:5px;"></i>Forecast Results</div>
+
+            <!-- Export / Share actions -->
+            <div class="result-actions">
+                <button class="action-btn" onclick="exportCSV()">
+                    <i class="fa-solid fa-file-csv"></i> Export CSV
+                </button>
+                <button class="action-btn" onclick="copyResults()">
+                    <i class="fa-solid fa-copy"></i> Copy
+                </button>
+            </div>
+
+            <div class="tabs">
+                <button class="tab-btn active" onclick="showTab('30', this)">30 Mins</button>
+                <button class="tab-btn" onclick="showTab('60', this)">60 Mins</button>
+                <button class="tab-btn" onclick="showTab('120', this)">120 Mins</button>
+            </div>
+
+            <!-- Out-of-range alert strip -->
+            <div class="alert-strip" id="alert-strip">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+                <span id="alert-strip-text"></span>
+            </div>
+
+            <div id="timeline" class="timeline"></div>
+
+            <!-- Chart -->
+            <div class="chart-wrap">
+                <div class="chart-header">
+                    <div class="chart-title"><i class="fa-solid fa-chart-area" style="margin-right:5px;"></i>Glucose Forecast Chart</div>
+                </div>
+                <canvas id="glucoseChart" height="160"></canvas>
+            </div>
+
+            <!-- Feeling Card -->
+            <div class="feeling-container">
+                <div class="feeling-icon"><i class="fa-solid fa-heart-pulse"></i></div>
+                <div>
+                    <div class="feeling-title">How You Might Feel</div>
+                    <div id="feeling">Analysis will appear here…</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer-links">
+            <a onclick="openModal('privacy')">Privacy Policy</a>
+            <span class="divider">|</span>
+            <a onclick="openModal('terms')">Terms &amp; Conditions</a>
+            <span class="divider">|</span>
+            <a href="profile.html">My Profile</a>
+        </div>
+    </div>
+</div>
+
+<!-- Cookie Banner -->
+<div id="cookie-banner">
+    <span>🍪 We use cookies to enhance your experience. Your health data is never stored.</span>
+    <button class="cookie-btn" onclick="acceptCookies()">Accept</button>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast">
+    <i class="fa-solid fa-circle-check"></i>
+    <span id="toastMsg">Copied!</span>
+</div>
+
+<!-- Modals -->
+<div id="privacy" class="modal" onclick="modalOverlayClick(event,'privacy')">
+    <div class="modal-content">
+        <button class="close-modal" onclick="closeModal('privacy')">&times;</button>
+        <h3>🔒 Privacy Policy</h3>
+        <p>We do <strong>not</strong> store your uploaded health data. All predictions are computed in real-time on your local backend server and cleared once the session ends. Your data never leaves your device. Your privacy is our priority.</p>
+    </div>
+</div>
+<div id="terms" class="modal" onclick="modalOverlayClick(event,'terms')">
+    <div class="modal-content">
+        <button class="close-modal" onclick="closeModal('terms')">&times;</button>
+        <h3>📋 Terms &amp; Conditions</h3>
+        <p>GlucoPredict AI is a research and informational tool and is <strong>NOT a certified medical device</strong>. Predictions are based on machine learning models and should not replace professional medical advice. Always consult a qualified healthcare professional for clinical decisions.</p>
+    </div>
+</div>
+
+<script>
+    /* ═══════════════════════════════════════════════════════
+       CONSTANTS & GLOBALS
+    ═══════════════════════════════════════════════════════ */
+    const BACKEND_URL = 'http://127.0.0.1:8000';
+    const fileInput   = document.getElementById('csvFile');
+    const fileSelected = document.getElementById('file-selected');
+    let globalPredictions = null;
+    let glucoseChart = null;
+    let currentTab   = '30';
+
+    /* ═══════════════════════════════════════════════════════
+       THEME
+    ═══════════════════════════════════════════════════════ */
+    function toggleTheme() {
+        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+        const theme  = isDark ? 'light' : 'dark';
+        applyTheme(theme);
+        localStorage.setItem('glucoTheme', theme);
+    }
+    function applyTheme(theme) {
+        document.documentElement.setAttribute('data-theme', theme);
+        const icon = theme === 'dark' ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+        document.getElementById('themeIcon').className       = icon;
+        if (document.getElementById('mobileThemeIcon'))
+            document.getElementById('mobileThemeIcon').className = icon;
+        if (glucoseChart) updateChartColors();
+    }
+    const savedTheme = localStorage.getItem('glucoTheme') || 'light';
+    applyTheme(savedTheme);
+
+    /* ═══════════════════════════════════════════════════════
+       SESSION / NAV
+    ═══════════════════════════════════════════════════════ */
+    const session = JSON.parse(
+        localStorage.getItem('glucoSession') ||
+        sessionStorage.getItem('glucoSession') || 'null'
+    );
+
+    if (session && session.loggedIn) {
+        // Show profile nav elements
+        document.getElementById('profileLink').style.display   = 'flex';
+        document.getElementById('navAvatarEl').style.display   = 'flex';
+        document.getElementById('loginBtn').style.display      = 'none';
+        document.getElementById('mobileProfileLink').style.display = 'block';
+        document.getElementById('mobileLoginBtn').style.display = 'none';
+
+        // Initials
+        const parts = (session.name || '?').split(' ');
+        document.getElementById('navInitials').innerText = (parts[0][0] + (parts[1]?.[0] || '')).toUpperCase();
+
+        // Check avatar
+        const savedAvatar = localStorage.getItem('glucoAvatar_' + session.email);
+        if (savedAvatar) {
+            const img = document.createElement('img');
+            img.src = savedAvatar;
+            img.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:50%;';
+            document.getElementById('navInitials').style.display = 'none';
+            document.getElementById('navAvatarEl').appendChild(img);
+        }
+
+        // Load custom thresholds
+        const prefs = JSON.parse(localStorage.getItem('glucoPrefs_' + session.email) || '{}');
+        if (prefs.low || prefs.high) {
+            document.getElementById('threshold-banner').style.display = 'flex';
+            document.getElementById('threshold-text').innerText =
+                `Alert thresholds: Low < ${prefs.low || 70} mg/dL · High > ${prefs.high || 180} mg/dL`;
+        }
+    }
+
+    /* ═══════════════════════════════════════════════════════
+       HAMBURGER MENU
+    ═══════════════════════════════════════════════════════ */
+    function toggleMobileMenu() {
+        const ham  = document.getElementById('hamburger');
+        const menu = document.getElementById('mobileMenu');
+        ham.classList.toggle('open');
+        menu.classList.toggle('open');
+    }
+
+    /* ═══════════════════════════════════════════════════════
+       FILE INPUT
+    ═══════════════════════════════════════════════════════ */
+    fileInput.addEventListener('change', (e) => {
+        if (e.target.files.length > 0) {
+            fileSelected.innerText = '📄 ' + e.target.files[0].name;
+            fileSelected.style.display = 'block';
+            document.getElementById('file-name').innerText = 'File Ready';
+        }
+    });
+
+    function handleDrag(e, over) {
+        e.preventDefault();
+        document.getElementById('upload-area').classList.toggle('drag-over', over);
+    }
+    function handleDrop(e) {
+        e.preventDefault();
+        document.getElementById('upload-area').classList.remove('drag-over');
+        const files = e.dataTransfer.files;
+        if (files.length > 0 && files[0].name.endsWith('.csv')) {
+            fileSelected.innerText = '📄 ' + files[0].name;
+            fileSelected.style.display = 'block';
+            document.getElementById('file-name').innerText = 'File Ready';
+        }
+    }
+
+    /* ═══════════════════════════════════════════════════════
+       BACKEND CHECK
+    ═══════════════════════════════════════════════════════ */
+    async function checkBackend() {
+        const banner = document.getElementById('status-banner');
+        const statusText = document.getElementById('status-text');
+        const helper = document.getElementById('offline-helper');
+        try {
+            await fetch(BACKEND_URL + '/docs', { method: 'GET', mode: 'no-cors' });
+            banner.className = 'online';
+            statusText.innerText = '✓ Backend is running — ready to predict';
+            helper.style.display = 'none';
+        } catch {
+            banner.className = 'offline';
+            statusText.innerText = '✗ Backend offline — start the server to use GlucoPredict AI';
+            helper.style.display = 'block';
+        }
+    }
+    checkBackend();
+
+    /* ═══════════════════════════════════════════════════════
+       CHART HELPERS
+    ═══════════════════════════════════════════════════════ */
+    function getChartColors() {
+        const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+        return {
+            grid: dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)',
+            tick: dark ? '#94a3b8' : '#64748b',
+            line: '#4f46e5',
+            fill: dark ? 'rgba(79,70,229,0.15)' : 'rgba(79,70,229,0.1)',
+        };
+    }
+
+    function buildChart(labels, data) {
+        const ctx = document.getElementById('glucoseChart').getContext('2d');
+        const clr = getChartColors();
+        const prefs = session ? JSON.parse(localStorage.getItem('glucoPrefs_' + session.email) || '{}') : {};
+        const low   = parseFloat(prefs.low  || 70);
+        const high  = parseFloat(prefs.high || 180);
+
+        if (glucoseChart) glucoseChart.destroy();
+        glucoseChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels,
+                datasets: [{
+                    label: 'Predicted Glucose (mg/dL)',
+                    data,
+                    borderColor: clr.line,
+                    backgroundColor: clr.fill,
+                    borderWidth: 2.5,
+                    pointBackgroundColor: data.map(v => v > high ? '#ef4444' : v < low ? '#f59e0b' : '#10b981'),
+                    pointRadius: 5,
+                    pointHoverRadius: 7,
+                    fill: true,
+                    tension: 0.4,
+                }]
+            },
+            options: {
+                responsive: true,
+                interaction: { mode: 'index', intersect: false },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: ctx => `${ctx.parsed.y.toFixed(1)} mg/dL`,
+                            afterLabel: ctx => {
+                                const v = ctx.parsed.y;
+                                if (v > high)  return '⚠ High';
+                                if (v < low)   return '⚠ Low';
+                                return '✓ Normal';
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: { grid: { color: clr.grid }, ticks: { color: clr.tick, font: { size: 11 } } },
+                    y: {
+                        grid: { color: clr.grid },
+                        ticks: { color: clr.tick, font: { size: 11 }, callback: v => v + ' mg/dL' },
+                        suggestedMin: Math.min(low - 20, Math.min(...data) - 20),
+                        suggestedMax: Math.max(high + 20, Math.max(...data) + 20),
+                    }
+                }
+            }
+        });
+    }
+
+    function updateChartColors() {
+        if (!glucoseChart) return;
+        const clr = getChartColors();
+        glucoseChart.options.scales.x.grid.color = clr.grid;
+        glucoseChart.options.scales.x.ticks.color = clr.tick;
+        glucoseChart.options.scales.y.grid.color = clr.grid;
+        glucoseChart.options.scales.y.ticks.color = clr.tick;
+        glucoseChart.data.datasets[0].backgroundColor = clr.fill;
+        glucoseChart.update();
+    }
+
+    /* ═══════════════════════════════════════════════════════
+       TAB SWITCHING
+    ═══════════════════════════════════════════════════════ */
+    function showTab(mins, btnEl) {
+        if (!globalPredictions) return;
+        currentTab = mins;
+
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        if (btnEl) btnEl.classList.add('active');
+
+        const predictions = globalPredictions[mins + '_min'];
+        if (!predictions) return;
+
+        const prefs = session ? JSON.parse(localStorage.getItem('glucoPrefs_' + session.email) || '{}') : {};
+        const low   = parseFloat(prefs.low  || 70);
+        const high  = parseFloat(prefs.high || 180);
+
+        // Timeline
+        const timeline = document.getElementById('timeline');
+        timeline.innerHTML = '';
+        predictions.forEach((val, index) => {
+            const minutes  = (index + 1) * 5;
+            let valClass   = 'normal', icon = '✅';
+            if (val > high) { valClass = 'high'; icon = '🔴'; }
+            else if (val < low) { valClass = 'low'; icon = '🟡'; }
+
+            timeline.innerHTML += `
+                <div class="timeline-item">
+                    <span class="time-label"><i class="fa-regular fa-clock" style="margin-right:5px;opacity:0.6;"></i>+${minutes} min</span>
+                    <span class="val-label ${valClass}">${icon} ${val.toFixed(1)} mg/dL</span>
+                </div>`;
+        });
+
+        // Alert strip
+        const alertStrip = document.getElementById('alert-strip');
+        const highCount = predictions.filter(v => v > high).length;
+        const lowCount  = predictions.filter(v => v < low).length;
+        if (highCount > 0) {
+            alertStrip.className = 'alert-strip danger';
+            document.getElementById('alert-strip-text').innerText =
+                `⚠ ${highCount} reading(s) exceed your high threshold (${high} mg/dL). Consider consulting your care team.`;
+        } else if (lowCount > 0) {
+            alertStrip.className = 'alert-strip warning';
+            document.getElementById('alert-strip-text').innerText =
+                `⚠ ${lowCount} reading(s) fall below your low threshold (${low} mg/dL). Monitor closely.`;
+        } else {
+            alertStrip.className = 'alert-strip';
+        }
+
+        // Chart
+        const labels = predictions.map((_, i) => '+' + ((i + 1) * 5) + ' min');
+        buildChart(labels, predictions);
+    }
+
+    /* ═══════════════════════════════════════════════════════
+       PREDICT
+    ═══════════════════════════════════════════════════════ */
+    async function predict() {
+        if (fileInput.files.length === 0) {
+            alert('⚠️  Please select a CSV file first!');
+            return;
+        }
+
+        const btn        = document.getElementById('predictBtn');
+        const btnText    = document.getElementById('btn-text');
+        const loader     = document.getElementById('loader');
+        const resultsDiv = document.getElementById('results');
+        const helper     = document.getElementById('offline-helper');
+
+        btn.disabled = true;
+        btnText.innerText = 'Analyzing…';
+        loader.style.display = 'inline-block';
+        resultsDiv.style.display = 'none';
+
+        const formData = new FormData();
+        formData.append('file', fileInput.files[0]);
+
+        try {
+            const response = await fetch(BACKEND_URL + '/predict', { method: 'POST', body: formData });
+            const data = await response.json();
+
+            if (data.detail) { alert('❌ Server Error: ' + data.detail); return; }
+
+            globalPredictions = data.predictions;
+            resultsDiv.style.display = 'block';
+
+            const firstTabBtn = document.querySelector('.tab-btn');
+            showTab('30', firstTabBtn);
+
+            document.getElementById('feeling').innerText = data.feeling;
+            resultsDiv.scrollIntoView({ behavior: 'smooth' });
+
+            const banner = document.getElementById('status-banner');
+            banner.className = 'online';
+            document.getElementById('status-text').innerText = '✓ Prediction complete!';
+            helper.style.display = 'none';
+
+            // Save to history
+            if (session) {
+                const history = JSON.parse(localStorage.getItem('glucoHistory_' + session.email) || '[]');
+                const prefs   = JSON.parse(localStorage.getItem('glucoPrefs_' + session.email) || '{}');
+                const high    = parseFloat(prefs.high || 180);
+                const low30   = data.predictions['30_min'];
+                const spike   = low30[0] - (low30[0]);
+                let status    = 'stable';
+                if (low30.some(v => v > high))  status = 'high';
+                if (low30.some(v => v < (prefs.low || 70))) status = 'low';
+
+                history.push({
+                    date: new Date().toLocaleString(),
+                    file: fileInput.files[0].name,
+                    status
+                });
+                localStorage.setItem('glucoHistory_' + session.email, JSON.stringify(history));
+            }
+
+        } catch (e) {
+            const banner = document.getElementById('status-banner');
+            banner.className = 'offline';
+            document.getElementById('status-text').innerText = '✗ Cannot reach backend — is the server running?';
+            helper.style.display = 'block';
+            helper.scrollIntoView({ behavior: 'smooth' });
+        } finally {
+            btn.disabled = false;
+            btnText.innerText = 'Predict Future Trends';
+            loader.style.display = 'none';
+        }
+    }
+
+    /* ═══════════════════════════════════════════════════════
+       EXPORT & COPY
+    ═══════════════════════════════════════════════════════ */
+    function exportCSV() {
+        if (!globalPredictions) return;
+        const preds = globalPredictions[currentTab + '_min'];
+        if (!preds) return;
+        const rows = [['Time (min)', 'Glucose (mg/dL)']];
+        preds.forEach((v, i) => rows.push([(i + 1) * 5, v.toFixed(2)]));
+        const csv  = rows.map(r => r.join(',')).join('\n');
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url  = URL.createObjectURL(blob);
+        const a    = document.createElement('a');
+        a.href = url; a.download = `gluco_forecast_${currentTab}min.csv`; a.click();
+        URL.revokeObjectURL(url);
+        showToast('CSV exported!');
+    }
+
+    function copyResults() {
+        if (!globalPredictions) return;
+        const preds = globalPredictions[currentTab + '_min'];
+        if (!preds) return;
+        const text = preds.map((v, i) => `+${(i+1)*5} min: ${v.toFixed(1)} mg/dL`).join('\n');
+        navigator.clipboard.writeText(text).then(() => showToast('Copied to clipboard!'));
+    }
+
+    /* ═══════════════════════════════════════════════════════
+       MODALS & COOKIE
+    ═══════════════════════════════════════════════════════ */
+    function openModal(id)  { document.getElementById(id).classList.add('open'); }
+    function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+    function modalOverlayClick(e, id) { if (e.target === document.getElementById(id)) closeModal(id); }
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') { closeModal('privacy'); closeModal('terms'); }
+    });
+
+    function acceptCookies() {
+        document.getElementById('cookie-banner').style.display = 'none';
+        localStorage.setItem('cookiesAccepted', '1');
+    }
+    if (localStorage.getItem('cookiesAccepted')) {
+        document.getElementById('cookie-banner').style.display = 'none';
+    }
+
+    /* ═══════════════════════════════════════════════════════
+       TOAST
+    ═══════════════════════════════════════════════════════ */
+    function showToast(msg) {
+        const t = document.getElementById('toast');
+        document.getElementById('toastMsg').innerText = msg;
+        t.classList.add('show');
+        setTimeout(() => t.classList.remove('show'), 2500);
+    }
+</script>
+</body>
+</html>

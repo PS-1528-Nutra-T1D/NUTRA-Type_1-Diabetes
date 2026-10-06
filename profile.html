@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Profile | GlucoPredict AI</title>
+    <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/822/822143.png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #4f46e5; --primary-light: #6366f1; --primary-hover: #3730a3;
+            --primary-bg: #eef2ff; --accent: #06b6d4;
+            --text-main: #0f172a; --text-muted: #64748b; --white: #ffffff;
+            --danger: #ef4444; --danger-bg: #fef2f2;
+            --success: #10b981; --success-bg: #f0fdf4;
+            --warning: #f59e0b; --warning-bg: #fffbeb;
+            --border: #e2e8f0;
+            --bg-body: #f1f5f9; --card-bg: #ffffff; --input-bg: #f8fafc;
+            --shadow: 0 10px 40px rgba(79,70,229,0.1), 0 4px 15px rgba(0,0,0,0.06);
+            --radius: 20px; --radius-sm: 12px;
+        }
+        [data-theme="dark"] {
+            --text-main: #f1f5f9; --text-muted: #94a3b8; --white: #1e293b;
+            --border: #334155; --bg-body: #0f172a; --card-bg: #1e293b;
+            --input-bg: #0f172a; --primary-bg: #1e1b4b;
+            --shadow: 0 10px 40px rgba(0,0,0,0.3);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            background: var(--bg-body); color: var(--text-main);
+            min-height: 100vh; transition: background 0.3s, color 0.3s;
+        }
+
+        /* ── Navbar ── */
+        .navbar {
+            background: var(--card-bg); border-bottom: 1px solid var(--border);
+            padding: 0 2rem; height: 64px;
+            display: flex; align-items: center; justify-content: space-between;
+            position: sticky; top: 0; z-index: 100;
+            box-shadow: 0 1px 8px rgba(0,0,0,0.06);
+        }
+        .nav-brand {
+            display: flex; align-items: center; gap: 10px;
+            font-weight: 800; font-size: 1.1rem; color: var(--text-main);
+            text-decoration: none;
+        }
+        .nav-brand .logo-dot {
+            width: 36px; height: 36px;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            border-radius: 10px; display: flex; align-items: center; justify-content: center;
+        }
+        .nav-brand .logo-dot i { color: white; font-size: 1rem; }
+        .nav-actions { display: flex; align-items: center; gap: 0.8rem; }
+        .nav-link {
+            padding: 8px 16px; border-radius: 10px;
+            font-size: 0.88rem; font-weight: 600;
+            color: var(--text-muted); cursor: pointer;
+            text-decoration: none; transition: all 0.2s;
+            border: none; background: none;
+        }
+        .nav-link:hover { background: var(--primary-bg); color: var(--primary); }
+        .nav-link.active { background: var(--primary-bg); color: var(--primary); }
+        .theme-btn {
+            width: 38px; height: 38px; border-radius: 10px;
+            border: 1.5px solid var(--border); background: var(--card-bg);
+            color: var(--text-muted); cursor: pointer; font-size: 1rem;
+            display: flex; align-items: center; justify-content: center;
+            transition: all 0.2s;
+        }
+        .theme-btn:hover { border-color: var(--primary); color: var(--primary); }
+        .logout-btn {
+            padding: 8px 14px; border-radius: 10px;
+            font-size: 0.85rem; font-weight: 600;
+            color: var(--danger); border: 1.5px solid #fecaca;
+            background: var(--danger-bg); cursor: pointer;
+            transition: all 0.2s; font-family: inherit;
+        }
+        .logout-btn:hover { background: var(--danger); color: white; }
+
+        /* ── Page layout ── */
+        .page { max-width: 900px; margin: 0 auto; padding: 2rem 1.5rem; }
+
+        /* ── Profile Header ── */
+        .profile-hero {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+            border-radius: var(--radius); padding: 2.5rem 2rem;
+            display: flex; align-items: center; gap: 2rem;
+            margin-bottom: 1.5rem; position: relative; overflow: hidden;
+            animation: slideUp 0.4s ease;
+        }
+        .profile-hero::before {
+            content: ''; position: absolute; inset: 0;
+            background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+        }
+        .avatar {
+            width: 90px; height: 90px; border-radius: 50%;
+            background: rgba(255,255,255,0.25); border: 3px solid rgba(255,255,255,0.5);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 2.2rem; font-weight: 800; color: white;
+            flex-shrink: 0; cursor: pointer; transition: transform 0.2s;
+            position: relative; overflow: hidden;
+        }
+        .avatar:hover { transform: scale(1.05); }
+        .avatar-upload-overlay {
+            position: absolute; inset: 0; background: rgba(0,0,0,0.4);
+            display: flex; align-items: center; justify-content: center;
+            opacity: 0; transition: opacity 0.2s; border-radius: 50%;
+        }
+        .avatar:hover .avatar-upload-overlay { opacity: 1; }
+        .avatar-upload-overlay i { color: white; font-size: 1.2rem; }
+        .hero-info { color: white; flex: 1; position: relative; }
+        .hero-info h1 { font-size: 1.8rem; font-weight: 800; }
+        .hero-info p { opacity: 0.85; font-size: 0.92rem; margin-top: 0.2rem; }
+        .diabetes-badge {
+            display: inline-flex; align-items: center; gap: 6px;
+            background: rgba(255,255,255,0.2); padding: 5px 14px;
+            border-radius: 20px; font-size: 0.8rem; font-weight: 700;
+            margin-top: 0.8rem; border: 1px solid rgba(255,255,255,0.3);
+        }
+        .hero-stats {
+            display: flex; gap: 1.5rem; margin-top: 1.2rem;
+            flex-wrap: wrap;
+        }
+        .hero-stat { text-align: center; }
+        .hero-stat .val { font-size: 1.4rem; font-weight: 800; }
+        .hero-stat .lbl { font-size: 0.72rem; opacity: 0.75; text-transform: uppercase; letter-spacing: 0.5px; }
+
+        @keyframes slideUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
+
+        /* ── Grid ── */
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; }
+        .grid.full { grid-template-columns: 1fr; }
+
+        /* ── Card ── */
+        .card {
+            background: var(--card-bg); border-radius: var(--radius);
+            padding: 1.8rem; border: 1px solid var(--border);
+            box-shadow: var(--shadow); animation: slideUp 0.4s ease;
+        }
+        .card-header {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 1.4rem;
+        }
+        .card-title {
+            font-size: 0.8rem; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.5px; color: var(--text-muted);
+            display: flex; align-items: center; gap: 0.5rem;
+        }
+        .card-title i { color: var(--primary); }
+        .edit-btn {
+            font-size: 0.82rem; font-weight: 600; color: var(--primary);
+            background: var(--primary-bg); border: none; cursor: pointer;
+            padding: 5px 12px; border-radius: 8px; font-family: inherit;
+            transition: all 0.2s;
+        }
+        .edit-btn:hover { background: var(--primary); color: white; }
+
+        /* ── Form Elements ── */
+        .form-group { margin-bottom: 1rem; }
+        label.field-label {
+            display: block; font-size: 0.78rem; font-weight: 600;
+            color: var(--text-muted); margin-bottom: 0.4rem;
+            text-transform: uppercase; letter-spacing: 0.3px;
+        }
+        .input-wrap { position: relative; }
+        .input-wrap i.icon {
+            position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+            color: var(--text-muted); font-size: 0.88rem;
+        }
+        input[type="text"], input[type="email"], input[type="number"], select, textarea {
+            width: 100%; padding: 0.7rem 0.9rem 0.7rem 2.4rem;
+            border: 1.5px solid var(--border); border-radius: 10px;
+            background: var(--input-bg); color: var(--text-main);
+            font-size: 0.92rem; font-family: inherit;
+            transition: border-color 0.2s; outline: none;
+        }
+        textarea { padding-left: 0.9rem; resize: vertical; min-height: 80px; }
+        input:focus, select:focus, textarea:focus {
+            border-color: var(--primary-light);
+            box-shadow: 0 0 0 3px rgba(79,70,229,0.1);
+        }
+        input:disabled, select:disabled, textarea:disabled {
+            opacity: 0.6; cursor: not-allowed;
+        }
+        select { appearance: none; cursor: pointer; }
+
+        /* ── Range slider ── */
+        .range-row { display: flex; gap: 0.8rem; align-items: flex-end; }
+        .range-row .form-group { flex: 1; margin-bottom: 0; }
+        .range-label { font-size: 0.72rem; color: var(--text-muted); text-align: center; margin-top: 0.3rem; }
+        input[type="range"] {
+            padding: 0; border: none; background: none;
+            accent-color: var(--primary); cursor: pointer; height: auto;
+        }
+        input[type="range"]:focus { box-shadow: none; }
+        .range-val { font-size: 1rem; font-weight: 700; color: var(--primary); text-align: center; }
+
+        /* ── Toggle switch ── */
+        .toggle-row {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 0.8rem 0; border-bottom: 1px solid var(--border);
+        }
+        .toggle-row:last-child { border-bottom: none; }
+        .toggle-info .toggle-title { font-size: 0.92rem; font-weight: 600; }
+        .toggle-info .toggle-desc { font-size: 0.78rem; color: var(--text-muted); margin-top: 2px; }
+        .switch { position: relative; width: 44px; height: 24px; flex-shrink: 0; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider {
+            position: absolute; inset: 0; cursor: pointer;
+            background: var(--border); border-radius: 24px; transition: 0.3s;
+        }
+        .slider:before {
+            content: ''; position: absolute;
+            width: 18px; height: 18px; left: 3px; bottom: 3px;
+            background: white; border-radius: 50%; transition: 0.3s;
+        }
+        input:checked + .slider { background: var(--primary); }
+        input:checked + .slider:before { transform: translateX(20px); }
+
+        /* ── History log ── */
+        .history-item {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 0.9rem 1rem; background: var(--input-bg);
+            border-radius: 10px; border: 1px solid var(--border);
+            margin-bottom: 0.6rem; font-size: 0.88rem;
+            transition: background 0.15s;
+        }
+        .history-item:hover { background: var(--primary-bg); }
+        .history-left .date { font-weight: 600; color: var(--text-main); }
+        .history-left .file { font-size: 0.75rem; color: var(--text-muted); margin-top: 2px; }
+        .history-right { display: flex; gap: 0.5rem; align-items: center; }
+        .hist-badge {
+            padding: 3px 10px; border-radius: 20px; font-size: 0.72rem; font-weight: 700;
+        }
+        .hist-badge.stable  { background: #f0fdf4; color: #065f46; }
+        .hist-badge.high    { background: #fef2f2; color: #b91c1c; }
+        .hist-badge.low     { background: #fffbeb; color: #92400e; }
+        .hist-del { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 0.85rem; padding: 4px; border-radius: 6px; transition: all 0.2s; }
+        .hist-del:hover { background: var(--danger-bg); color: var(--danger); }
+
+        /* ── Save button ── */
+        .btn-save {
+            padding: 0.7rem 1.6rem;
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            color: white; border: none; border-radius: 10px;
+            font-size: 0.9rem; font-weight: 700; cursor: pointer;
+            transition: all 0.2s; font-family: inherit;
+            box-shadow: 0 4px 12px rgba(79,70,229,0.35);
+        }
+        .btn-save:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(79,70,229,0.45); }
+
+        /* ── Alert toast ── */
+        .toast {
+            position: fixed; bottom: 1.5rem; right: 1.5rem;
+            background: #10b981; color: white;
+            padding: 0.8rem 1.4rem; border-radius: 12px;
+            font-size: 0.88rem; font-weight: 600;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+            display: flex; align-items: center; gap: 0.6rem;
+            z-index: 9999; transform: translateY(80px); opacity: 0;
+            transition: all 0.3s ease;
+        }
+        .toast.show { transform: translateY(0); opacity: 1; }
+        .toast.error { background: var(--danger); }
+
+        /* ── No history ── */
+        .empty-state {
+            text-align: center; padding: 2rem;
+            color: var(--text-muted); font-size: 0.88rem;
+        }
+        .empty-state i { font-size: 2rem; margin-bottom: 0.8rem; display: block; opacity: 0.4; }
+
+        @media (max-width: 640px) {
+            .grid { grid-template-columns: 1fr; }
+            .profile-hero { flex-direction: column; text-align: center; }
+            .hero-stats { justify-content: center; }
+            .navbar { padding: 0 1rem; }
+            .nav-link { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Navbar -->
+<nav class="navbar">
+    <a class="nav-brand" href="index.html">
+        <div class="logo-dot"><i class="fa-solid fa-droplet"></i></div>
+        GlucoPredict AI
+    </a>
+    <div class="nav-actions">
+        <a class="nav-link" href="index.html"><i class="fa-solid fa-house"></i> Home</a>
+        <a class="nav-link active" href="profile.html"><i class="fa-solid fa-user"></i> Profile</a>
+        <button class="theme-btn" onclick="toggleTheme()" title="Toggle theme" id="themeBtn">
+            <i class="fa-solid fa-moon" id="themeIcon"></i>
+        </button>
+        <button class="logout-btn" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i> Logout</button>
+    </div>
+</nav>
+
+<div class="page">
+
+    <!-- Profile Hero -->
+    <div class="profile-hero">
+        <div class="avatar" id="avatarEl" onclick="document.getElementById('avatarInput').click()">
+            <span id="avatarInitials">?</span>
+            <div class="avatar-upload-overlay"><i class="fa-solid fa-camera"></i></div>
+        </div>
+        <input type="file" id="avatarInput" accept="image/*" style="display:none" onchange="handleAvatarUpload(event)">
+        <div class="hero-info">
+            <h1 id="heroName">Loading…</h1>
+            <p id="heroEmail">—</p>
+            <div class="diabetes-badge"><i class="fa-solid fa-notes-medical"></i> <span id="heroDiabetesType">—</span></div>
+            <div class="hero-stats">
+                <div class="hero-stat">
+                    <div class="val" id="statPredictions">0</div>
+                    <div class="lbl">Predictions</div>
+                </div>
+                <div class="hero-stat">
+                    <div class="val" id="statDays">—</div>
+                    <div class="lbl">Days Active</div>
+                </div>
+                <div class="hero-stat">
+                    <div class="val" id="statAvgGlucose">—</div>
+                    <div class="lbl">Avg Reading</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Grid -->
+    <div class="grid">
+
+        <!-- Personal Info -->
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title"><i class="fa-solid fa-user"></i> Personal Info</div>
+                <button class="edit-btn" id="editPersonalBtn" onclick="toggleEdit('personal')">
+                    <i class="fa-solid fa-pen"></i> Edit
+                </button>
+            </div>
+            <div class="form-group">
+                <label class="field-label">Full Name</label>
+                <div class="input-wrap">
+                    <i class="icon fa-solid fa-user"></i>
+                    <input type="text" id="profileName" disabled>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="field-label">Email Address</label>
+                <div class="input-wrap">
+                    <i class="icon fa-solid fa-envelope"></i>
+                    <input type="email" id="profileEmail" disabled>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="field-label">Age</label>
+                <div class="input-wrap">
+                    <i class="icon fa-solid fa-calendar"></i>
+                    <input type="number" id="profileAge" placeholder="Enter your age" min="1" max="120" disabled>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="field-label">Bio / Notes</label>
+                <textarea id="profileBio" placeholder="Add notes about your condition, doctor info, etc…" disabled></textarea>
+            </div>
+            <div id="personalSaveRow" style="display:none; margin-top:0.5rem;">
+                <button class="btn-save" onclick="savePersonal()"><i class="fa-solid fa-floppy-disk"></i> Save Changes</button>
+            </div>
+        </div>
+
+        <!-- Medical Settings -->
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title"><i class="fa-solid fa-heart-pulse"></i> Medical Settings</div>
+                <button class="edit-btn" id="editMedBtn" onclick="toggleEdit('medical')">
+                    <i class="fa-solid fa-pen"></i> Edit
+                </button>
+            </div>
+            <div class="form-group">
+                <label class="field-label">Diabetes Type</label>
+                <div class="input-wrap">
+                    <i class="icon fa-solid fa-notes-medical"></i>
+                    <select id="profileDiabetesType" disabled>
+                        <option value="type1">Type 1 Diabetes</option>
+                        <option value="type2">Type 2 Diabetes</option>
+                        <option value="prediabetes">Pre-Diabetes</option>
+                        <option value="gestational">Gestational Diabetes</option>
+                        <option value="other">Other / Research</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="field-label">CGM Device</label>
+                <div class="input-wrap">
+                    <i class="icon fa-solid fa-microchip"></i>
+                    <select id="profileCGM" disabled>
+                        <option value="">Select CGM device…</option>
+                        <option value="dexcom-g7">Dexcom G7</option>
+                        <option value="dexcom-g6">Dexcom G6</option>
+                        <option value="libre3">FreeStyle Libre 3</option>
+                        <option value="libre2">FreeStyle Libre 2</option>
+                        <option value="medtronic">Medtronic Guardian</option>
+                        <option value="manual">Manual / Other</option>
+                    </select>
+                </div>
+            </div>
+            <div style="margin-bottom:1rem;">
+                <label class="field-label">Target Glucose Range (mg/dL)</label>
+                <div class="range-row">
+                    <div class="form-group">
+                        <label class="field-label" style="color:var(--success)">Low Alert</label>
+                        <input type="number" id="profileLow" min="40" max="100" placeholder="70" disabled>
+                        <div class="range-label">Min: <b id="lowVal">70</b> mg/dL</div>
+                    </div>
+                    <div class="form-group">
+                        <label class="field-label" style="color:var(--danger)">High Alert</label>
+                        <input type="number" id="profileHigh" min="120" max="400" placeholder="180" disabled>
+                        <div class="range-label">Max: <b id="highVal">180</b> mg/dL</div>
+                    </div>
+                </div>
+            </div>
+            <div id="medSaveRow" style="display:none; margin-top:0.5rem;">
+                <button class="btn-save" onclick="saveMedical()"><i class="fa-solid fa-floppy-disk"></i> Save Changes</button>
+            </div>
+        </div>
+
+    </div><!-- /grid -->
+
+    <!-- Notifications + History row -->
+    <div class="grid" style="margin-top:1.2rem;">
+
+        <!-- Notification Settings -->
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title"><i class="fa-solid fa-bell"></i> Notifications</div>
+            </div>
+            <div class="toggle-row">
+                <div class="toggle-info">
+                    <div class="toggle-title">High Glucose Alert</div>
+                    <div class="toggle-desc">Alert when prediction exceeds your high threshold</div>
+                </div>
+                <label class="switch">
+                    <input type="checkbox" id="notifHigh" checked onchange="saveNotifSettings()">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="toggle-row">
+                <div class="toggle-info">
+                    <div class="toggle-title">Low Glucose Alert</div>
+                    <div class="toggle-desc">Alert when prediction drops below your low threshold</div>
+                </div>
+                <label class="switch">
+                    <input type="checkbox" id="notifLow" checked onchange="saveNotifSettings()">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="toggle-row">
+                <div class="toggle-info">
+                    <div class="toggle-title">Rapid Spike Warning</div>
+                    <div class="toggle-desc">Warn when glucose rises > 40 mg/dL rapidly</div>
+                </div>
+                <label class="switch">
+                    <input type="checkbox" id="notifSpike" checked onchange="saveNotifSettings()">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="toggle-row">
+                <div class="toggle-info">
+                    <div class="toggle-title">Rapid Drop Warning</div>
+                    <div class="toggle-desc">Warn on sudden drops > 40 mg/dL</div>
+                </div>
+                <label class="switch">
+                    <input type="checkbox" id="notifDrop" checked onchange="saveNotifSettings()">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="toggle-row">
+                <div class="toggle-info">
+                    <div class="toggle-title">Dark Mode Default</div>
+                    <div class="toggle-desc">Use dark theme by default when you open the app</div>
+                </div>
+                <label class="switch">
+                    <input type="checkbox" id="notifDark" onchange="handleDarkDefault(this)">
+                    <span class="slider"></span>
+                </label>
+            </div>
+        </div>
+
+        <!-- Prediction History -->
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title"><i class="fa-solid fa-clock-rotate-left"></i> Prediction History</div>
+                <button class="edit-btn" onclick="clearHistory()" style="color:var(--danger); background:var(--danger-bg);">
+                    <i class="fa-solid fa-trash"></i> Clear All
+                </button>
+            </div>
+            <div id="historyList"></div>
+        </div>
+
+    </div><!-- /grid2 -->
+
+    <!-- Danger Zone -->
+    <div class="card" style="margin-top:1.2rem; border-color:#fecaca;">
+        <div class="card-header">
+            <div class="card-title" style="color:var(--danger);"><i class="fa-solid fa-triangle-exclamation"></i> Danger Zone</div>
+        </div>
+        <div style="display:flex; gap:1rem; flex-wrap:wrap; align-items:center; justify-content:space-between;">
+            <div>
+                <div style="font-weight:600; font-size:0.92rem;">Delete My Account</div>
+                <div style="font-size:0.8rem; color:var(--text-muted); margin-top:2px;">This will permanently delete all your data. This cannot be undone.</div>
+            </div>
+            <button onclick="deleteAccount()" style="padding:8px 18px; background:var(--danger); color:white; border:none; border-radius:10px; font-weight:700; cursor:pointer; font-size:0.88rem; font-family:inherit;">
+                <i class="fa-solid fa-user-xmark"></i> Delete Account
+            </button>
+        </div>
+    </div>
+
+</div><!-- /page -->
+
+<!-- Toast -->
+<div class="toast" id="toast">
+    <i class="fa-solid fa-circle-check"></i>
+    <span id="toastMsg">Saved successfully!</span>
+</div>
+
+<script>
+    // ── Theme ──────────────────────────────────────────────────────
+    function toggleTheme() {
+        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+        document.documentElement.setAttribute('data-theme', isDark ? 'light' : 'dark');
+        document.getElementById('themeIcon').className = isDark ? 'fa-solid fa-moon' : 'fa-solid fa-sun';
+        localStorage.setItem('glucoTheme', isDark ? 'light' : 'dark');
+    }
+    const savedTheme = localStorage.getItem('glucoTheme') || 'light';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+    document.getElementById('themeIcon').className = savedTheme === 'dark' ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+
+    // ── Session ────────────────────────────────────────────────────
+    const session = JSON.parse(localStorage.getItem('glucoSession') || sessionStorage.getItem('glucoSession') || 'null');
+    if (!session || !session.loggedIn) window.location.href = 'login.html';
+
+    function logout() {
+        if (!confirm('Are you sure you want to log out?')) return;
+        localStorage.removeItem('glucoSession');
+        sessionStorage.removeItem('glucoSession');
+        window.location.href = 'login.html';
+    }
+
+    // ── Load Profile ───────────────────────────────────────────────
+    function loadProfile() {
+        if (!session) return;
+        const prefs = JSON.parse(localStorage.getItem('glucoPrefs_' + session.email) || '{}');
+
+        // Hero
+        document.getElementById('heroName').innerText  = session.name || 'User';
+        document.getElementById('heroEmail').innerText = session.email || '';
+        const typeMap = { type1:'Type 1 Diabetes', type2:'Type 2 Diabetes', prediabetes:'Pre-Diabetes', gestational:'Gestational', other:'Other/Research' };
+        document.getElementById('heroDiabetesType').innerText = typeMap[session.diabetesType] || 'Unknown';
+
+        // Initials
+        const parts = (session.name || '?').split(' ');
+        document.getElementById('avatarInitials').innerText = (parts[0][0] + (parts[1]?.[0] || '')).toUpperCase();
+
+        // Check saved avatar image
+        const savedAvatar = localStorage.getItem('glucoAvatar_' + session.email);
+        if (savedAvatar) {
+            document.getElementById('avatarEl').style.background = 'none';
+            document.getElementById('avatarInitials').style.display = 'none';
+            const img = document.createElement('img');
+            img.src = savedAvatar; img.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:50%;';
+            document.getElementById('avatarEl').insertBefore(img, document.getElementById('avatarEl').firstChild);
+        }
+
+        // Form fields
+        document.getElementById('profileName').value  = prefs.name  || session.name || '';
+        document.getElementById('profileEmail').value = session.email || '';
+        document.getElementById('profileAge').value   = prefs.age || '';
+        document.getElementById('profileBio').value   = prefs.bio || '';
+        document.getElementById('profileDiabetesType').value = prefs.diabetesType || session.diabetesType || 'type1';
+        document.getElementById('profileCGM').value   = prefs.cgm || '';
+        document.getElementById('profileLow').value   = prefs.low || 70;
+        document.getElementById('profileHigh').value  = prefs.high || 180;
+        document.getElementById('lowVal').innerText   = prefs.low || 70;
+        document.getElementById('highVal').innerText  = prefs.high || 180;
+
+        // Notif
+        const notif = JSON.parse(localStorage.getItem('glucoNotif_' + session.email) || '{}');
+        document.getElementById('notifHigh').checked  = notif.high  !== false;
+        document.getElementById('notifLow').checked   = notif.low   !== false;
+        document.getElementById('notifSpike').checked = notif.spike !== false;
+        document.getElementById('notifDrop').checked  = notif.drop  !== false;
+        document.getElementById('notifDark').checked  = savedTheme === 'dark';
+
+        // Stats
+        const history = JSON.parse(localStorage.getItem('glucoHistory_' + session.email) || '[]');
+        document.getElementById('statPredictions').innerText = history.length;
+
+        const users  = JSON.parse(localStorage.getItem('glucoUsers') || '[]');
+        const user   = users.find(u => u.email === session.email);
+        if (user && user.createdAt) {
+            const days = Math.max(1, Math.floor((Date.now() - new Date(user.createdAt)) / 86400000));
+            document.getElementById('statDays').innerText = days;
+        } else {
+            document.getElementById('statDays').innerText = '1';
+        }
+
+        const avgGlucose = prefs.avgGlucose || '—';
+        document.getElementById('statAvgGlucose').innerText = avgGlucose === '—' ? '—' : avgGlucose + ' mg/dL';
+
+        // History list
+        renderHistory(history);
+    }
+
+    // ── Render History ─────────────────────────────────────────────
+    function renderHistory(history) {
+        const el = document.getElementById('historyList');
+        if (!history.length) {
+            el.innerHTML = `<div class="empty-state"><i class="fa-solid fa-chart-line"></i>No predictions yet.<br>Upload a CSV on the home page to get started.</div>`;
+            return;
+        }
+        el.innerHTML = history.slice().reverse().map((item, idx) => `
+            <div class="history-item">
+                <div class="history-left">
+                    <div class="date">${item.date}</div>
+                    <div class="file"><i class="fa-solid fa-file-csv" style="margin-right:4px;"></i>${item.file || 'Unknown file'}</div>
+                </div>
+                <div class="history-right">
+                    <span class="hist-badge ${item.status || 'stable'}">${capitalize(item.status || 'Stable')}</span>
+                    <button class="hist-del" onclick="deleteHistItem(${history.length - 1 - idx})" title="Delete"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+            </div>
+        `).join('');
+    }
+    function capitalize(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+
+    function deleteHistItem(idx) {
+        const history = JSON.parse(localStorage.getItem('glucoHistory_' + session.email) || '[]');
+        history.splice(idx, 1);
+        localStorage.setItem('glucoHistory_' + session.email, JSON.stringify(history));
+        document.getElementById('statPredictions').innerText = history.length;
+        renderHistory(history);
+        showToast('Entry removed.');
+    }
+
+    function clearHistory() {
+        if (!confirm('Clear all prediction history?')) return;
+        localStorage.removeItem('glucoHistory_' + session.email);
+        document.getElementById('statPredictions').innerText = 0;
+        renderHistory([]);
+        showToast('History cleared.');
+    }
+
+    // ── Edit Toggles ───────────────────────────────────────────────
+    function toggleEdit(section) {
+        const ids = section === 'personal'
+            ? ['profileName','profileAge','profileBio']
+            : ['profileDiabetesType','profileCGM','profileLow','profileHigh'];
+        const saveRowId = section === 'personal' ? 'personalSaveRow' : 'medSaveRow';
+        const btnId     = section === 'personal' ? 'editPersonalBtn' : 'editMedBtn';
+
+        const isDisabled = document.getElementById(ids[0]).disabled;
+        ids.forEach(id => document.getElementById(id).disabled = !isDisabled);
+        document.getElementById(saveRowId).style.display = isDisabled ? 'block' : 'none';
+        document.getElementById(btnId).innerHTML = isDisabled
+            ? '<i class="fa-solid fa-xmark"></i> Cancel'
+            : '<i class="fa-solid fa-pen"></i> Edit';
+    }
+
+    function savePersonal() {
+        const prefs = JSON.parse(localStorage.getItem('glucoPrefs_' + session.email) || '{}');
+        prefs.name = document.getElementById('profileName').value;
+        prefs.age  = document.getElementById('profileAge').value;
+        prefs.bio  = document.getElementById('profileBio').value;
+        localStorage.setItem('glucoPrefs_' + session.email, JSON.stringify(prefs));
+        session.name = prefs.name;
+        sessionStorage.setItem('glucoSession', JSON.stringify(session));
+        document.getElementById('heroName').innerText = prefs.name;
+        toggleEdit('personal');
+        showToast('Personal info saved!');
+    }
+
+    function saveMedical() {
+        const prefs = JSON.parse(localStorage.getItem('glucoPrefs_' + session.email) || '{}');
+        prefs.diabetesType = document.getElementById('profileDiabetesType').value;
+        prefs.cgm   = document.getElementById('profileCGM').value;
+        prefs.low   = document.getElementById('profileLow').value;
+        prefs.high  = document.getElementById('profileHigh').value;
+        localStorage.setItem('glucoPrefs_' + session.email, JSON.stringify(prefs));
+        document.getElementById('lowVal').innerText  = prefs.low;
+        document.getElementById('highVal').innerText = prefs.high;
+        toggleEdit('medical');
+        showToast('Medical settings saved!');
+    }
+
+    function saveNotifSettings() {
+        const notif = {
+            high:  document.getElementById('notifHigh').checked,
+            low:   document.getElementById('notifLow').checked,
+            spike: document.getElementById('notifSpike').checked,
+            drop:  document.getElementById('notifDrop').checked,
+        };
+        localStorage.setItem('glucoNotif_' + session.email, JSON.stringify(notif));
+    }
+
+    function handleDarkDefault(cb) {
+        const theme = cb.checked ? 'dark' : 'light';
+        document.documentElement.setAttribute('data-theme', theme);
+        document.getElementById('themeIcon').className = theme === 'dark' ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+        localStorage.setItem('glucoTheme', theme);
+    }
+
+    // ── Avatar Upload ──────────────────────────────────────────────
+    function handleAvatarUpload(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            const data = ev.target.result;
+            localStorage.setItem('glucoAvatar_' + session.email, data);
+            const avatarEl = document.getElementById('avatarEl');
+            let img = avatarEl.querySelector('img');
+            if (!img) {
+                img = document.createElement('img');
+                img.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:50%;position:absolute;top:0;left:0;';
+                avatarEl.insertBefore(img, avatarEl.firstChild);
+                document.getElementById('avatarInitials').style.display = 'none';
+            }
+            img.src = data;
+            showToast('Profile photo updated!');
+        };
+        reader.readAsDataURL(file);
+    }
+
+    // ── Delete Account ─────────────────────────────────────────────
+    function deleteAccount() {
+        if (!confirm('Are you absolutely sure? All your data will be permanently deleted.')) return;
+        if (prompt('Type DELETE to confirm:') !== 'DELETE') { showToast('Cancelled.', 'error'); return; }
+        const users = JSON.parse(localStorage.getItem('glucoUsers') || '[]');
+        const filtered = users.filter(u => u.email !== session.email);
+        localStorage.setItem('glucoUsers', JSON.stringify(filtered));
+        localStorage.removeItem('glucoSession');
+        localStorage.removeItem('glucoPrefs_' + session.email);
+        localStorage.removeItem('glucoHistory_' + session.email);
+        localStorage.removeItem('glucoNotif_' + session.email);
+        localStorage.removeItem('glucoAvatar_' + session.email);
+        sessionStorage.clear();
+        window.location.href = 'login.html';
+    }
+
+    // ── Toast ──────────────────────────────────────────────────────
+    function showToast(msg, type = 'success') {
+        const t = document.getElementById('toast');
+        document.getElementById('toastMsg').innerText = msg;
+        t.className = 'toast show' + (type === 'error' ? ' error' : '');
+        setTimeout(() => t.className = 'toast', 2800);
+    }
+
+    loadProfile();
+</script>
+</body>
+</html>
