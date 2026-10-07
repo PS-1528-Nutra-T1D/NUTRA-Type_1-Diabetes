@@ -68,12 +68,12 @@ for name in possible_weights:
 if weights_path:
     try:
         # Standard load
-        transformer.load_state_dict(torch.load(weights_path, map_location=device, weights_only=False))
+        transformer.load_state_dict(torch.load(weights_path, map_location=torch.device('cpu'), weights_only=False))
         print(f"Successfully loaded weights from {weights_path}")
     except Exception as e:
         print(f"Standard load failed for {weights_path}: {e}. Trying dict load...")
         try:
-            state_dict = torch.load(weights_path, map_location=device, weights_only=False)
+            state_dict = torch.load(weights_path, map_location=torch.device('cpu'), weights_only=False)
             if isinstance(state_dict, dict):
                 if 'model_state_dict' in state_dict:
                     transformer.load_state_dict(state_dict['model_state_dict'])

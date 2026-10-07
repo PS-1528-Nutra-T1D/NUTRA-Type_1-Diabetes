@@ -1,0 +1,8 @@
+# Temporary test files and backup weights
+backend/model_weights.pth.bak
+backend/test_predictions.py
+backend/testingforgluco.csv
+
+# Python
+__pycache__/
+*.pyc
