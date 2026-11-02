@@ -1,0 +1,137 @@
+====================================================================================================
+PROJECT PRESENTATION & EXPLANATION CHEAT SHEET: NUTRA - TYPE 1 DIABETES (GLUCOPREDICT)
+====================================================================================================
+
+This guide explains where every component lives, what each file does, and the exact talking points
+to present to your professor/mentor ("Sir").
+
+----------------------------------------------------------------------------------------------------
+1. HIGH-LEVEL PROJECT ARCHITECTURE (THE ELEVATOR PITCH)
+----------------------------------------------------------------------------------------------------
+"Sir, our project is a real-time Blood Glucose Forecasting system for Type 1 Diabetes (T1D).
+Managing T1D requires continuous vigilance to prevent hypoglycemia (life-threatening low blood sugar)
+and hyperglycemia (spikes). 
+
+We developed a deep learning architecture that combines:
+  1. Recurrent inductive bias (LSTM) to capture sequential blood sugar dynamics.
+  2. Multi-Head Self-Attention (Transformer) to capture long-range temporal dependencies and circadian rhythms.
+  3. A clinical multi-step autoregressive forecasting pipeline to predict glucose levels 30 min, 60 min,
+     and 120 min into the future.
+  4. An end-to-end cloud deployment: FastAPI on Render + Clinical Web UI on Netlify."
+
+
+----------------------------------------------------------------------------------------------------
+2. DIRECTORY STRUCTURE: WHAT IS LOCATED WHERE
+----------------------------------------------------------------------------------------------------
+Project Root: C:\Users\Paluru Jayatheerth\OneDrive\Desktop\NUTRA-Type_1-Diabetes
+
+[A] Model Weights & Core Serving:
+    backend/hybrid_lstm_transformer.pth  -> The active PyTorch model weights (~601 KB) running in production.
+    backend/app.py                       -> FastAPI server handling feature preprocessing and multi-step inference.
+    backend/requirements.txt             -> Lightweight dependencies optimized for Render 512MB RAM tier.
+
+[B] Model Training, Code & Graphs (Show these to Sir):
+    model_training_and_graphs/lstmtransformer.py          -> Full PyTorch training pipeline & architecture.
+    model_training_and_graphs/training_loss.png           -> Graph showing Training vs Validation Loss over epochs.
+    model_training_and_graphs/actual_vs_predicted.png     -> Graph showing Ground Truth vs Predicted Glucose trajectories.
+    model_training_and_graphs/plot_actual_vs_predicted.py -> Script that generated the evaluation graphs.
+
+[C] Previous Iterations & Notebooks:
+    RF_LSTM/RF&LSTM_v1.ipynb                 -> Baseline Random Forest & standalone LSTM experiments.
+    git_project_nutra/notebook4833f09b9b.ipynb -> Exploratory Data Analysis (EDA) on patient CGM/HR datasets.
+
+[D] Frontend (Netlify):
+    frontend/index.html   -> Main live prediction dashboard (upload CSV, interactive timeline & forecast chart).
+    frontend/profile.html -> Threshold settings (hypo/hyperglycemia alert limits) and prediction logs.
+    frontend/login.html   -> Authentication / user session management.
+
+
+----------------------------------------------------------------------------------------------------
+3. STEP-BY-STEP EXPLANATION OF WHAT TO SHOW AND SAY TO SIR
+----------------------------------------------------------------------------------------------------
+
+STEP 1: THE DATASET & FEATURE ENGINEERING
+--------------------------------------------------
+File: model_training_and_graphs/lstmtransformer.py (Lines 35 - 126)
+What to show:
+  - Input Columns: `GlucoseCGM` (Continuous Glucose Monitor, mg/dL) and `HR` (Heart Rate in bpm).
+  - Window Size: WINDOW_SIZE = 12 (12 consecutive readings = 60 minutes of history at 5-min intervals).
+  - Time-of-day features:
+      time_sin = sin(2 * pi * minutes / 1440)
+      time_cos = cos(2 * pi * minutes / 1440)
+What to say:
+  "Sir, glucose dynamics vary drastically based on human circadian rhythm (e.g., dawn phenomenon, meal times).
+   Instead of just raw values, we projected the timestamp into cyclical sine and cosine angles so the network
+   understands 24-hour periodicity."
+
+
+STEP 2: THE HYBRID NEURAL NETWORK ARCHITECTURE
+--------------------------------------------------
+File: model_training_and_graphs/lstmtransformer.py (Lines 425 - 528)
+Also in: backend/app.py (Lines 60 - 130)
+What to show:
+  Show class `HybridLSTMTransformer(nn.Module)`:
+  - Linear Projection: Projects the 4 input features into 64-dimensional latent space.
+  - Positional Encoding: Injects order information for transformer attention.
+  - Branch 1 (LSTM): nn.LSTM(input_size=64, hidden_size=64, num_layers=1, batch_first=True)
+  - Branch 2 (Transformer): nn.TransformerEncoderLayer(d_model=64, nhead=4, dim_feedforward=256, activation='gelu')
+  - Fusion Layer: Concatenates lstm_features + transformer_features (128-dim) -> Linear -> ReLU -> Linear(32) -> Output(1)
+What to say:
+  "Sir, standalone LSTMs struggle with long horizons, while standard Transformers lack the natural recurrence
+   property inherent in physiological streams. We designed a dual-branch hybrid:
+   - Branch 1 (LSTM) tracks short-term momentum and rate-of-change.
+   - Branch 2 (Transformer with 4 Attention Heads) attends across the entire 1-hour window.
+   - A multi-layer fusion head merges both representations into a single glucose prediction."
+
+
+STEP 3: TRAINING & VALIDATION PERFORMANCE (THE GRAPHS)
+--------------------------------------------------
+Graph 1: model_training_and_graphs/training_loss.png
+  What to show:
+    Open the image in your picture viewer or VS Code.
+  What to say:
+    "Sir, this is our Training vs Validation Loss curve. Both the train MSE and validation MSE converge
+     steadily below 0.1 normalized loss without diverging or displaying overfitting, supported by our
+     0.1 dropout and early stopping mechanism."
+
+Graph 2: model_training_and_graphs/actual_vs_predicted.png
+  What to show:
+    Open the image comparing Actual (blue) vs Predicted (orange) curves.
+  What to say:
+    "Sir, here is our test sample evaluation on unseen patient data. Notice how closely the predicted trajectory
+     tracks sudden glucose spikes and rapid drops with minimal lag, which is critical for early warning alerts."
+
+
+STEP 4: LIVE PRODUCTION DEPLOYMENT & AUTOREGRESSIVE FORECASTING
+--------------------------------------------------
+File: backend/app.py (Function: generate_forecast)
+Live URL: https://t1dpredictor.netlify.app/
+What to show:
+  - Show how the backend runs `generate_forecast(history, steps)`:
+      * 6 steps   -> 30-minute horizon
+      * 12 steps  -> 60-minute horizon
+      * 24 steps  -> 120-minute (2 hour) horizon
+  - Demonstrate uploading `backend/drop_test.csv` or `backend/spike_test.csv` on the live Netlify site.
+What to say:
+  "Sir, on our deployed web application, when the patient uploads their CGM log:
+   1. The FastAPI backend running on Render validates the sequence and transforms it using the pre-fit scalers.
+   2. It executes an autoregressive roll-forward: predicting t+1, feeding it back as input, and generating a 2-hour forecast.
+   3. It categorizes the trend into clinically actionable states: 'Rapid Drop (Warning)', 'Moderate Rise', or 'Stable'.
+   4. The frontend renders an interactive Chart.js trajectory for the patient and doctor."
+
+
+----------------------------------------------------------------------------------------------------
+4. QUICK RECAP TABLE FOR SIR'S COMMON QUESTIONS
+----------------------------------------------------------------------------------------------------
+Question: "Why did you use PyTorch?"
+Answer:   "PyTorch allows dynamic tensor graphs and explicit model architecture customization for combining
+          LSTM layers and Transformer Encoder layers."
+
+Question: "Where are the model weights stored?"
+Answer:   "`backend/hybrid_lstm_transformer.pth`. The file is 601 KB, containing both the trained weights
+          and the exact mean/standard-deviation normalization tensors to guarantee inference consistency."
+
+Question: "How do you avoid latency or server crashes on Render?"
+Answer:   "We compiled PyTorch CPU wheels (`whl/cpu`) and eliminated heavy redundant scikit-learn model files,
+          keeping memory footprint well under Render's 512MB RAM limit."
+====================================================================================================
