@@ -3,6 +3,14 @@ backend/model_weights.pth.bak
 backend/test_predictions.py
 backend/testingforgluco.csv
 
+# Large dataset files (kept local, not in git)
+*.csv.bak
+*.zip
+*.rar
+
 # Python
 __pycache__/
 *.pyc
+.env
+venv/
+.venv/
