@@ -4,8 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>GLUCOPREDICT // Clinical Bi-LSTM + Transformer Glucose Telemetry</title>
-    <meta name="description" content="Precision blood glucose trajectory forecasting utilizing dual-branch Bi-LSTM and self-attention Transformer networks with physiological momentum clearance.">
+    <title>GLUCODEX // Clinical Bi-LSTM + Transformer Glucose Telemetry</title>
+    <meta name="description" content="GlucoDex: Precision blood glucose trajectory forecasting utilizing dual-branch Bi-LSTM and self-attention Transformer networks with physiological momentum clearance.">
+    <link rel="icon" type="image/jpeg" href="./glucodex.jpeg">
 
     <!-- Distinctive Typographic Pairing: Fraunces (High-Contrast Editorial Serif) + JetBrains Mono (Technical Monospace) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -770,6 +771,394 @@
             outline: 2.5px solid var(--clinical-spruce);
             outline-offset: 3px;
         }
+
+        /* ── GlucoDex Logo ── */
+        .brand-logo-wrap {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .brand-logo-img {
+            width: 34px !important;
+            height: 34px !important;
+            border-radius: 6px !important;
+            object-fit: cover !important;
+            border: 1.5px solid var(--border-heavy);
+            box-shadow: 1px 1px 0px var(--border-heavy);
+            display: block;
+        }
+
+        /* ── Model Metric / R2 Score Card ── */
+        .r2-metric-card {
+            background: var(--bg-paper);
+            border: 2px solid var(--border-heavy);
+            box-shadow: 3px 3px 0px var(--border-heavy);
+            padding: 0.85rem 1rem;
+            margin-bottom: 1.25rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .r2-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px dotted var(--border-hairline);
+            padding-bottom: 0.35rem;
+        }
+
+        .r2-card-tag {
+            font-size: 0.65rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--ink-muted);
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+        }
+
+        .r2-card-badge {
+            font-size: 0.62rem;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            padding: 0.15rem 0.45rem;
+            background: var(--clinical-spruce-bg);
+            color: var(--clinical-spruce);
+            border: 1px solid var(--clinical-spruce);
+        }
+
+        .r2-card-body {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            gap: 0.5rem;
+        }
+
+        .r2-card-title {
+            display: block;
+            font-size: 0.82rem;
+            font-weight: 700;
+            color: var(--ink-black);
+            font-family: var(--font-mono);
+            letter-spacing: -0.01em;
+        }
+
+        .r2-card-sub {
+            display: block;
+            font-size: 0.65rem;
+            color: var(--ink-muted);
+            margin-top: 0.15rem;
+        }
+
+        .r2-card-value {
+            font-family: var(--font-mono);
+            font-size: 1.45rem;
+            font-weight: 700;
+            color: var(--clinical-spruce);
+            letter-spacing: -0.02em;
+        }
+
+        .r2-card-footer {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.66rem;
+            color: var(--ink-muted);
+            border-top: 1px dotted var(--border-hairline);
+            padding-top: 0.35rem;
+            font-family: var(--font-mono);
+        }
+
+        /* ── Alert Controls & Settings Card ── */
+        .alert-controls-card {
+            background: var(--surface-card);
+            border: 2px solid var(--border-heavy);
+            box-shadow: 3px 3px 0px var(--border-heavy);
+            padding: 0.85rem 1rem;
+            margin-bottom: 1.25rem;
+        }
+
+        .alert-controls-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px dotted var(--border-hairline);
+            padding-bottom: 0.4rem;
+            margin-bottom: 0.65rem;
+        }
+
+        .alert-controls-title {
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.07em;
+            text-transform: uppercase;
+            color: var(--ink-black);
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .alert-status-badge {
+            font-size: 0.62rem;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            padding: 0.15rem 0.45rem;
+            border: 1px solid currentColor;
+        }
+
+        .alert-status-badge.in-range {
+            background: var(--clinical-spruce-bg);
+            color: var(--clinical-spruce);
+        }
+
+        .alert-status-badge.danger {
+            background: var(--clinical-red-bg);
+            color: var(--clinical-red);
+            animation: alert-pulse-danger 1.5s infinite;
+        }
+
+        .alert-status-badge.warning {
+            background: var(--clinical-amber-bg);
+            color: var(--clinical-amber);
+            animation: alert-pulse-warning 1.5s infinite;
+        }
+
+        @keyframes alert-pulse-danger {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.55; }
+        }
+
+        @keyframes alert-pulse-warning {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        .threshold-inputs-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.6rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .threshold-field label {
+            display: block;
+            font-size: 0.64rem;
+            font-weight: 600;
+            color: var(--ink-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.25rem;
+        }
+
+        .threshold-input-box {
+            display: flex;
+            align-items: center;
+            border: 1.5px solid var(--border-heavy);
+            background: var(--bg-paper);
+            padding: 0.25rem 0.4rem;
+        }
+
+        .threshold-input-box input {
+            width: 100%;
+            border: none;
+            background: transparent;
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--ink-black);
+            outline: none;
+        }
+
+        .threshold-input-box span {
+            font-size: 0.65rem;
+            color: var(--ink-muted);
+            margin-left: 0.25rem;
+            white-space: nowrap;
+        }
+
+        .alert-toggles-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.45rem;
+            border-top: 1px dotted var(--border-hairline);
+            padding-top: 0.55rem;
+        }
+
+        .alert-toggle-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.72rem;
+            font-weight: 600;
+        }
+
+        .alert-toggle-label {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            color: var(--ink-black);
+            cursor: pointer;
+        }
+
+        .btn-chime-test {
+            background: transparent;
+            border: 1px solid var(--border-heavy);
+            font-family: var(--font-mono);
+            font-size: 0.6rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            padding: 0.15rem 0.4rem;
+            cursor: pointer;
+            color: var(--ink-black);
+            transition: all 0.1s ease;
+        }
+
+        .btn-chime-test:hover {
+            background: var(--ink-black);
+            color: var(--bg-paper);
+        }
+
+        .custom-checkbox {
+            accent-color: var(--clinical-spruce);
+            width: 15px;
+            height: 15px;
+            cursor: pointer;
+        }
+
+        /* ── Real-Time Clinical Threshold Alert Banner ── */
+        .threshold-alert-banner {
+            border: 2px solid var(--border-heavy);
+            box-shadow: 4px 4px 0px var(--border-heavy);
+            padding: 1rem 1.25rem;
+            margin-bottom: 1.25rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            background: var(--surface-card);
+            transition: all 0.2s ease;
+        }
+
+        .threshold-alert-banner.idle {
+            background: var(--bg-paper);
+            border-color: var(--border-heavy);
+            color: var(--ink-black);
+        }
+
+        .threshold-alert-banner.hypo {
+            background: var(--clinical-red-bg);
+            border-color: var(--clinical-red);
+            box-shadow: 4px 4px 0px var(--clinical-red);
+        }
+
+        .threshold-alert-banner.hypo .alert-banner-headline {
+            color: var(--clinical-red);
+        }
+
+        .threshold-alert-banner.hypo .alert-banner-icon {
+            color: var(--clinical-red);
+            animation: alert-pulse-danger 1s infinite;
+        }
+
+        .threshold-alert-banner.hyper {
+            background: var(--clinical-amber-bg);
+            border-color: var(--clinical-amber);
+            box-shadow: 4px 4px 0px var(--clinical-amber);
+        }
+
+        .threshold-alert-banner.hyper .alert-banner-headline {
+            color: var(--clinical-amber);
+        }
+
+        .threshold-alert-banner.hyper .alert-banner-icon {
+            color: var(--clinical-amber);
+            animation: alert-pulse-warning 1.2s infinite;
+        }
+
+        .threshold-alert-banner.normal {
+            background: var(--clinical-spruce-bg);
+            border-color: var(--clinical-spruce);
+            box-shadow: 4px 4px 0px var(--clinical-spruce);
+        }
+
+        .threshold-alert-banner.normal .alert-banner-headline {
+            color: var(--clinical-spruce);
+        }
+
+        .threshold-alert-banner.normal .alert-banner-icon {
+            color: var(--clinical-spruce);
+        }
+
+        .alert-banner-main {
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+        }
+
+        .alert-banner-icon {
+            font-size: 1.6rem;
+            line-height: 1;
+            padding-top: 0.15rem;
+        }
+
+        .alert-banner-content {
+            flex: 1;
+        }
+
+        .alert-banner-headline {
+            font-size: 0.92rem;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            font-family: var(--font-mono);
+            margin-bottom: 0.25rem;
+        }
+
+        .alert-banner-details {
+            font-size: 0.78rem;
+            color: var(--ink-black);
+            line-height: 1.45;
+        }
+
+        .alert-horizon-chips {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            margin-top: 0.55rem;
+        }
+
+        .horizon-chip {
+            font-family: var(--font-mono);
+            font-size: 0.72rem;
+            font-weight: 700;
+            padding: 0.25rem 0.55rem;
+            border: 1.5px solid var(--border-heavy);
+            background: var(--surface-card);
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+        }
+
+        .horizon-chip.breach-low {
+            border-color: var(--clinical-red);
+            background: var(--clinical-red-bg);
+            color: var(--clinical-red);
+        }
+
+        .horizon-chip.breach-high {
+            border-color: var(--clinical-amber);
+            background: var(--clinical-amber-bg);
+            color: var(--clinical-amber);
+        }
+
+        .horizon-chip.safe {
+            border-color: var(--clinical-spruce);
+            background: var(--clinical-spruce-bg);
+            color: var(--clinical-spruce);
+        }
     </style>
 </head>
 <body>
@@ -777,7 +1166,10 @@
     <!-- ── TOP MASTHEAD ── -->
     <header class="masthead">
         <div class="brand-block">
-            <span class="brand-title">GlucoPredict AI</span>
+            <div class="brand-logo-wrap">
+                <img src="./glucodex.jpeg" alt="GlucoDex Logo" class="brand-logo-img">
+                <span class="brand-title">GlucoDex</span>
+            </div>
             <span class="brand-spec">Clinical Telemetry // Bi-LSTM + Transformer</span>
         </div>
 
@@ -848,6 +1240,76 @@
                     </tr>
                 </table>
 
+                <!-- Model Performance R2 Score Card (Directly Below Features Block) -->
+                <div class="r2-metric-card" id="r2MetricCard">
+                    <div class="r2-card-header">
+                        <span class="r2-card-tag"><i class="fa-solid fa-chart-simple"></i> Model Metric</span>
+                        <span class="r2-card-badge">Validated (Test Set)</span>
+                    </div>
+                    <div class="r2-card-body">
+                        <div class="r2-card-meta">
+                            <span class="r2-card-title">Test R² Score</span>
+                            <span class="r2-card-sub">OhioT1DM Benchmark (N=65,077)</span>
+                        </div>
+                        <div class="r2-card-value" id="modelR2Score">0.9926</div>
+                    </div>
+                    <div class="r2-card-footer">
+                        <span>RMSE: 5.39 mg/dL</span>
+                        <span>MAE: 3.27 mg/dL</span>
+                    </div>
+                </div>
+
+                <!-- Real-Time Threshold Alert Controls & Settings -->
+                <div class="alert-controls-card" id="alertControlsCard">
+                    <div class="alert-controls-header">
+                        <span class="alert-controls-title">
+                            <i class="fa-solid fa-bell"></i> Threshold Alerts
+                        </span>
+                        <span class="alert-status-badge in-range" id="alertActiveBadge">ARMED</span>
+                    </div>
+
+                    <!-- Adjustable Thresholds -->
+                    <div class="threshold-inputs-grid">
+                        <div class="threshold-field">
+                            <label for="threshLow">Low Limit (Hypo)</label>
+                            <div class="threshold-input-box">
+                                <input type="number" id="threshLow" value="70" min="40" max="110" step="5" onchange="handleThresholdChange()">
+                                <span>mg/dL</span>
+                            </div>
+                        </div>
+                        <div class="threshold-field">
+                            <label for="threshHigh">High Limit (Hyper)</label>
+                            <div class="threshold-input-box">
+                                <input type="number" id="threshHigh" value="180" min="130" max="300" step="5" onchange="handleThresholdChange()">
+                                <span>mg/dL</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Notification & Sound Toggles -->
+                    <div class="alert-toggles-list">
+                        <div class="alert-toggle-item">
+                            <label class="alert-toggle-label" for="toggleSound">
+                                <i class="fa-solid fa-volume-high"></i> Audio Chime
+                            </label>
+                            <div style="display:flex;align-items:center;gap:0.4rem;">
+                                <button type="button" class="btn-chime-test" onclick="testChimeSound()" title="Test Web Audio Chime">Test</button>
+                                <input type="checkbox" id="toggleSound" checked class="custom-checkbox" onchange="saveAlertSettings()">
+                            </div>
+                        </div>
+
+                        <div class="alert-toggle-item">
+                            <label class="alert-toggle-label" for="toggleNotify">
+                                <i class="fa-solid fa-desktop"></i> Desktop Alerts
+                            </label>
+                            <div style="display:flex;align-items:center;gap:0.4rem;">
+                                <button type="button" class="btn-chime-test" onclick="testDesktopNotification()" title="Test Desktop Notification Popup">Test</button>
+                                <input type="checkbox" id="toggleNotify" class="custom-checkbox" onchange="handleNotifyToggle()">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Drag and Drop Box -->
                 <div class="dropzone-ledger" id="dropzone">
                     <input type="file" id="csvFile" accept=".csv">
@@ -902,6 +1364,24 @@
                         <button class="horizon-btn active" id="tab30" onclick="switchHorizon('30')">+30 MIN</button>
                         <button class="horizon-btn" id="tab60" onclick="switchHorizon('60')">+60 MIN</button>
                         <button class="horizon-btn" id="tab120" onclick="switchHorizon('120')">+120 MIN</button>
+                    </div>
+                </div>
+
+                <!-- High-Visibility Real-Time Clinical Threshold Alert Banner -->
+                <div class="threshold-alert-banner idle" id="thresholdAlertBanner">
+                    <div class="alert-banner-main">
+                        <div class="alert-banner-icon" id="alertBannerIcon">
+                            <i class="fa-solid fa-shield-halved"></i>
+                        </div>
+                        <div class="alert-banner-content">
+                            <div class="alert-banner-headline" id="alertBannerHeadline">
+                                CLINICAL THRESHOLD MONITOR // ARMED
+                            </div>
+                            <div class="alert-banner-details" id="alertBannerDetails">
+                                Real-time clinical trajectory evaluation continuously checks +30m, +60m, and +120m forecast horizons against safety thresholds [70 – 180 mg/dL].
+                            </div>
+                            <div class="alert-horizon-chips" id="alertHorizonChips" style="display:none;"></div>
+                        </div>
                     </div>
                 </div>
 
@@ -1065,7 +1545,7 @@
 
     <!-- ── FOOTER ── -->
     <footer class="ledger-footer">
-        <div>GLUCOPREDICT CLINICAL AI // ARCHITECTURE SPEC: HYBRID BI-LSTM + TRANSFORMER</div>
+        <div>GLUCODEX CLINICAL AI // ARCHITECTURE SPEC: HYBRID BI-LSTM + TRANSFORMER</div>
         <div>MODEL PARAMETERS: 192-D FUSION &bull; SAMPLING: 5-MIN INTERVAL &bull; TRAINED ON D1NAMO CLINICAL COHORT</div>
     </footer>
 
@@ -1104,7 +1584,7 @@
             }
         }
 
-        // ── Health Check ──
+        // ── Health Check & Metrics ──
         async function checkBackend() {
             const statusEl = document.getElementById('systemStatus');
             const statusText = document.getElementById('systemStatusText');
@@ -1114,6 +1594,10 @@
                 if (data.status === 'healthy') {
                     statusEl.className = 'status-badge online';
                     statusText.innerText = `READY // ${data.model || 'Bi-LSTM + Transformer'}`;
+                    if (data.metrics && data.metrics.r2_score) {
+                        const r2El = document.getElementById('modelR2Score');
+                        if (r2El) r2El.innerText = Number(data.metrics.r2_score).toFixed(4);
+                    }
                 }
             } catch (e) {
                 statusEl.className = 'status-badge offline';
@@ -1121,6 +1605,389 @@
             }
         }
         checkBackend();
+
+        async function fetchModelMetrics() {
+            try {
+                const res = await fetch(BACKEND_URL + '/metrics');
+                if (res.ok) {
+                    const d = await res.json();
+                    if (d.r2_score) {
+                        const r2El = document.getElementById('modelR2Score');
+                        if (r2El) r2El.innerText = Number(d.r2_score).toFixed(4);
+                        return;
+                    }
+                }
+            } catch (e) {}
+
+            try {
+                const res = await fetch('./metrics.json');
+                if (res.ok) {
+                    const d = await res.json();
+                    if (d.r2_score) {
+                        const r2El = document.getElementById('modelR2Score');
+                        if (r2El) r2El.innerText = Number(d.r2_score).toFixed(4);
+                    }
+                }
+            } catch (e) {}
+        }
+        fetchModelMetrics();
+
+        // ── Real-Time Clinical Threshold Alert System & Web Audio Chime ──
+        let audioCtxInstance = null;
+
+        function getAudioContext() {
+            if (!audioCtxInstance) {
+                const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                if (AudioCtx) audioCtxInstance = new AudioCtx();
+            }
+            if (audioCtxInstance && audioCtxInstance.state === 'suspended') {
+                audioCtxInstance.resume();
+            }
+            return audioCtxInstance;
+        }
+
+        function playWebAudioChime(type) {
+            try {
+                const ctx = getAudioContext();
+                if (!ctx) return;
+                const now = ctx.currentTime;
+
+                if (type === 'hypo') {
+                    // Urgent descending two-tone chime (A5 -> D5)
+                    [880, 587.33].forEach((freq, idx) => {
+                        const osc = ctx.createOscillator();
+                        const gain = ctx.createGain();
+                        osc.type = 'sine';
+                        osc.frequency.setValueAtTime(freq, now + idx * 0.16);
+                        gain.gain.setValueAtTime(0.18, now + idx * 0.16);
+                        gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.16 + 0.35);
+                        osc.connect(gain);
+                        gain.connect(ctx.destination);
+                        osc.start(now + idx * 0.16);
+                        osc.stop(now + idx * 0.16 + 0.4);
+                    });
+                } else if (type === 'hyper') {
+                    // Ascending warning chime (D5 -> A5)
+                    [587.33, 880].forEach((freq, idx) => {
+                        const osc = ctx.createOscillator();
+                        const gain = ctx.createGain();
+                        osc.type = 'triangle';
+                        osc.frequency.setValueAtTime(freq, now + idx * 0.16);
+                        gain.gain.setValueAtTime(0.16, now + idx * 0.16);
+                        gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.16 + 0.35);
+                        osc.connect(gain);
+                        gain.connect(ctx.destination);
+                        osc.start(now + idx * 0.16);
+                        osc.stop(now + idx * 0.16 + 0.4);
+                    });
+                } else {
+                    // Gentle confirmation / in-range chime (C5 -> G5)
+                    [523.25, 783.99].forEach((freq, idx) => {
+                        const osc = ctx.createOscillator();
+                        const gain = ctx.createGain();
+                        osc.type = 'sine';
+                        osc.frequency.setValueAtTime(freq, now + idx * 0.14);
+                        gain.gain.setValueAtTime(0.12, now + idx * 0.14);
+                        gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.14 + 0.3);
+                        osc.connect(gain);
+                        gain.connect(ctx.destination);
+                        osc.start(now + idx * 0.14);
+                        osc.stop(now + idx * 0.14 + 0.35);
+                    });
+                }
+            } catch (err) {
+                console.warn("Web Audio chime failed:", err);
+            }
+        }
+
+        function testChimeSound() {
+            playWebAudioChime('hyper');
+        }
+
+        // ── Native Browser Desktop Notifications ──
+        async function testDesktopNotification() {
+            if (window.location.protocol === 'file:') {
+                alert("⚠️ Browser Security Limitation:\n\nChrome, Edge, and other browsers block Desktop Notifications on 'file://' paths for security reasons.\n\nTo test real popup alerts on your laptop:\n1. Serve the frontend over localhost: run 'python -m http.server 3000' in the frontend folder\n2. Open http://localhost:3000 in your browser\n(Or view directly once hosted on Netlify).");
+                return;
+            }
+
+            if (!("Notification" in window)) {
+                alert("This browser does not support the Web Notifications API.");
+                return;
+            }
+
+            let perm = Notification.permission;
+            if (perm !== "granted") {
+                perm = await Notification.requestPermission();
+            }
+
+            if (perm === "granted") {
+                const chk = document.getElementById('toggleNotify');
+                if (chk) chk.checked = true;
+                saveAlertSettings();
+                try {
+                    const n = new Notification("GlucoDex Clinical Test Alert", {
+                        body: "Desktop notifications are active! Alerts will pop up if glucose breaches thresholds (< 70 or > 180 mg/dL).",
+                        icon: './glucodex.jpeg',
+                        tag: 'test-notification'
+                    });
+                    n.onclick = () => window.focus();
+                } catch (e) {
+                    alert("Notification error: " + e.message);
+                }
+            } else if (perm === "denied") {
+                alert("Notifications are BLOCKED by your browser for this site.\n\nTo allow:\n1. Click the 'Site information' icon (tune/padlock icon) to the left of the address bar.\n2. Set 'Notifications' to 'Allow'.\n3. Refresh this page.");
+            } else {
+                alert("Notification permission was not granted.");
+            }
+        }
+
+        async function handleNotifyToggle() {
+            const chk = document.getElementById('toggleNotify');
+            if (chk.checked) {
+                if (window.location.protocol === 'file:') {
+                    alert("⚠️ Browser Security Limitation:\n\nChrome and Edge block Desktop Notifications on 'file://' URLs.\n\nTo receive popup notifications, serve this folder via localhost (e.g. 'python -m http.server 3000' -> http://localhost:3000) or Netlify.");
+                    chk.checked = false;
+                    saveAlertSettings();
+                    return;
+                }
+
+                if (!("Notification" in window)) {
+                    alert("This browser does not support native desktop notifications.");
+                    chk.checked = false;
+                    return;
+                }
+
+                if (Notification.permission === "granted") {
+                    saveAlertSettings();
+                    triggerBrowserNotification("GlucoDex Notifications Enabled", "You will receive desktop alerts when predicted glucose trajectories breach clinical safety thresholds.");
+                } else if (Notification.permission !== "denied") {
+                    const permission = await Notification.requestPermission();
+                    if (permission === "granted") {
+                        saveAlertSettings();
+                        triggerBrowserNotification("GlucoDex Notifications Enabled", "You will receive desktop alerts when predicted glucose trajectories breach clinical safety thresholds.");
+                    } else {
+                        chk.checked = false;
+                        saveAlertSettings();
+                    }
+                } else {
+                    alert("Notifications are BLOCKED for this site.\n\nPlease click the site settings / padlock icon in your browser address bar and enable Notifications, then refresh.");
+                    chk.checked = false;
+                    saveAlertSettings();
+                }
+            } else {
+                saveAlertSettings();
+            }
+        }
+
+        function triggerBrowserNotification(title, body) {
+            if (!("Notification" in window)) return;
+            if (Notification.permission === "granted") {
+                try {
+                    const n = new Notification(title, {
+                        body: body,
+                        icon: './glucodex.jpeg',
+                        tag: 'glucodex-clinical-alert',
+                        requireInteraction: true
+                    });
+                    n.onclick = () => window.focus();
+                } catch (e) {
+                    console.warn("Desktop notification trigger failed:", e);
+                }
+            }
+        }
+
+        // ── Persistent Alert Settings (localStorage) ──
+        function saveAlertSettings() {
+            const settings = {
+                low: parseFloat(document.getElementById('threshLow').value) || 70,
+                high: parseFloat(document.getElementById('threshHigh').value) || 180,
+                sound: document.getElementById('toggleSound').checked,
+                notify: document.getElementById('toggleNotify').checked
+            };
+            localStorage.setItem('glucodex_alerts', JSON.stringify(settings));
+        }
+
+        function loadAlertSettings() {
+            try {
+                const raw = localStorage.getItem('glucodex_alerts');
+                if (raw) {
+                    const s = JSON.parse(raw);
+                    if (s.low) document.getElementById('threshLow').value = s.low;
+                    if (s.high) document.getElementById('threshHigh').value = s.high;
+                    if (s.sound !== undefined) document.getElementById('toggleSound').checked = s.sound;
+                    if (s.notify !== undefined && "Notification" in window && Notification.permission === "granted") {
+                        document.getElementById('toggleNotify').checked = s.notify;
+                    }
+                }
+            } catch (e) {}
+        }
+        loadAlertSettings();
+
+        function handleThresholdChange() {
+            saveAlertSettings();
+            if (globalPredictions) {
+                evaluateGlucoseAlerts(globalPredictions);
+            }
+        }
+
+        // ── Trajectory Evaluation Against Clinical Thresholds ──
+        function evaluateGlucoseAlerts(predictions) {
+            if (!predictions) return;
+
+            const lowThresh = parseFloat(document.getElementById('threshLow').value) || 70;
+            const highThresh = parseFloat(document.getElementById('threshHigh').value) || 180;
+            const soundEnabled = document.getElementById('toggleSound').checked;
+            const notifyEnabled = document.getElementById('toggleNotify').checked;
+
+            const p30 = predictions['30_min'] || [];
+            const p60 = predictions['60_min'] || [];
+            const p120 = predictions['120_min'] || [];
+
+            const analyzeHorizon = (arr) => {
+                if (!arr || !arr.length) return { min: 0, max: 0, hasLow: false, hasHigh: false };
+                const minVal = Math.min(...arr);
+                const maxVal = Math.max(...arr);
+                return {
+                    min: minVal,
+                    max: maxVal,
+                    hasLow: minVal < lowThresh,
+                    hasHigh: maxVal > highThresh
+                };
+            };
+
+            const s30 = analyzeHorizon(p30);
+            const s60 = analyzeHorizon(p60);
+            const s120 = analyzeHorizon(p120);
+
+            const anyLow = s30.hasLow || s60.hasLow || s120.hasLow;
+            const anyHigh = s30.hasHigh || s60.hasHigh || s120.hasHigh;
+
+            const banner = document.getElementById('thresholdAlertBanner');
+            const icon = document.getElementById('alertBannerIcon');
+            const headline = document.getElementById('alertBannerHeadline');
+            const details = document.getElementById('alertBannerDetails');
+            const chips = document.getElementById('alertHorizonChips');
+            const statusBadge = document.getElementById('alertActiveBadge');
+
+            if (!banner || !headline || !details) return;
+
+            chips.innerHTML = '';
+            chips.style.display = 'flex';
+
+            const horizonConfigs = [
+                { name: '+30m Horizon', stats: s30 },
+                { name: '+60m Horizon', stats: s60 },
+                { name: '+120m Horizon', stats: s120 }
+            ];
+
+            if (anyLow) {
+                // Hypoglycemia Warning (Critical Low < 70 mg/dL)
+                banner.className = 'threshold-alert-banner hypo';
+                icon.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i>';
+                headline.innerText = '🚨 HYPOGLYCEMIA WARNING // CRITICAL LOW DETECTED';
+                statusBadge.className = 'alert-status-badge danger';
+                statusBadge.innerText = 'CRITICAL LOW';
+
+                const lowestVal = Math.min(
+                    s30.hasLow ? s30.min : 999,
+                    s60.hasLow ? s60.min : 999,
+                    s120.hasLow ? s120.min : 999
+                );
+
+                const breaches = [];
+                if (s30.hasLow) breaches.push(`+30m (${s30.min.toFixed(1)} mg/dL)`);
+                if (s60.hasLow) breaches.push(`+60m (${s60.min.toFixed(1)} mg/dL)`);
+                if (s120.hasLow) breaches.push(`+120m (${s120.min.toFixed(1)} mg/dL)`);
+
+                details.innerHTML = `Projected glucose breaches clinical minimum (<strong>&lt; ${lowThresh} mg/dL</strong>) reaching a nadir of <strong>${lowestVal.toFixed(1)} mg/dL</strong>. Breached horizons: <strong>${breaches.join(', ')}</strong>. Fast-acting carbohydrate intake recommended immediately.`;
+
+                horizonConfigs.forEach(h => {
+                    const chip = document.createElement('div');
+                    if (h.stats.hasLow) {
+                        chip.className = 'horizon-chip breach-low';
+                        chip.innerHTML = `<i class="fa-solid fa-arrow-down"></i> ${h.name}: ${h.stats.min.toFixed(1)} mg/dL (LOW)`;
+                    } else if (h.stats.hasHigh) {
+                        chip.className = 'horizon-chip breach-high';
+                        chip.innerHTML = `<i class="fa-solid fa-arrow-up"></i> ${h.name}: ${h.stats.max.toFixed(1)} mg/dL (HIGH)`;
+                    } else {
+                        chip.className = 'horizon-chip safe';
+                        chip.innerHTML = `<i class="fa-solid fa-check"></i> ${h.name}: In-Range (${h.stats.min.toFixed(0)}-${h.stats.max.toFixed(0)})`;
+                    }
+                    chips.appendChild(chip);
+                });
+
+                if (soundEnabled) playWebAudioChime('hypo');
+                if (notifyEnabled) {
+                    triggerBrowserNotification(
+                        'GlucoDex: Critical Hypoglycemia Alert',
+                        `Hypoglycemia forecast: Glucose drops to ${lowestVal.toFixed(1)} mg/dL (< ${lowThresh} mg/dL) in ${breaches.join(', ')}.`
+                    );
+                }
+
+            } else if (anyHigh) {
+                // Hyperglycemia Warning (High Glucose Spike > 180 mg/dL)
+                banner.className = 'threshold-alert-banner hyper';
+                icon.innerHTML = '<i class="fa-solid fa-arrow-trend-up"></i>';
+                headline.innerText = '⚠️ HYPERGLYCEMIA WARNING // HIGH GLUCOSE SPIKE';
+                statusBadge.className = 'alert-status-badge warning';
+                statusBadge.innerText = 'HIGH SPIKE';
+
+                const highestVal = Math.max(
+                    s30.hasHigh ? s30.max : -999,
+                    s60.hasHigh ? s60.max : -999,
+                    s120.hasHigh ? s120.max : -999
+                );
+
+                const breaches = [];
+                if (s30.hasHigh) breaches.push(`+30m (${s30.max.toFixed(1)} mg/dL)`);
+                if (s60.hasHigh) breaches.push(`+60m (${s60.max.toFixed(1)} mg/dL)`);
+                if (s120.hasHigh) breaches.push(`+120m (${s120.max.toFixed(1)} mg/dL)`);
+
+                details.innerHTML = `Projected glucose exceeds clinical threshold (<strong>&gt; ${highThresh} mg/dL</strong>) reaching a peak of <strong>${highestVal.toFixed(1)} mg/dL</strong>. Breached horizons: <strong>${breaches.join(', ')}</strong>. Monitor for insulin correction or exertion.`;
+
+                horizonConfigs.forEach(h => {
+                    const chip = document.createElement('div');
+                    if (h.stats.hasHigh) {
+                        chip.className = 'horizon-chip breach-high';
+                        chip.innerHTML = `<i class="fa-solid fa-arrow-up"></i> ${h.name}: ${h.stats.max.toFixed(1)} mg/dL (HIGH)`;
+                    } else {
+                        chip.className = 'horizon-chip safe';
+                        chip.innerHTML = `<i class="fa-solid fa-check"></i> ${h.name}: In-Range (${h.stats.min.toFixed(0)}-${h.stats.max.toFixed(0)})`;
+                    }
+                    chips.appendChild(chip);
+                });
+
+                if (soundEnabled) playWebAudioChime('hyper');
+                if (notifyEnabled) {
+                    triggerBrowserNotification(
+                        'GlucoDex: Hyperglycemia Spike Warning',
+                        `Hyperglycemia forecast: Glucose spikes to ${highestVal.toFixed(1)} mg/dL (> ${highThresh} mg/dL) in ${breaches.join(', ')}.`
+                    );
+                }
+
+            } else {
+                // Normal Range (70 – 180 mg/dL)
+                banner.className = 'threshold-alert-banner normal';
+                icon.innerHTML = '<i class="fa-solid fa-circle-check"></i>';
+                headline.innerText = '✅ NORMAL GLUCOSE RANGE // EUGLYCEMIC STABILITY';
+                statusBadge.className = 'alert-status-badge in-range';
+                statusBadge.innerText = 'IN-RANGE';
+
+                const lowestVal = Math.min(s30.min, s60.min, s120.min);
+                const highestVal = Math.max(s30.max, s60.max, s120.max);
+                details.innerHTML = `All projected horizons (+30m, +60m, +120m) remain safely within clinical target boundaries [${lowThresh} – ${highThresh} mg/dL]. Forecast range: <strong>${lowestVal.toFixed(1)} – ${highestVal.toFixed(1)} mg/dL</strong>.`;
+
+                horizonConfigs.forEach(h => {
+                    const chip = document.createElement('div');
+                    chip.className = 'horizon-chip safe';
+                    chip.innerHTML = `<i class="fa-solid fa-check"></i> ${h.name}: Safe (${h.stats.min.toFixed(0)} – ${h.stats.max.toFixed(0)} mg/dL)`;
+                    chips.appendChild(chip);
+                });
+
+                if (soundEnabled) playWebAudioChime('normal');
+            }
+        }
 
         // ── Dropzone & File Management ──
         const dropzone = document.getElementById('dropzone');
@@ -1224,6 +2091,15 @@
                 } else {
                     banner.className = 'diagnostic-banner stable';
                 }
+
+                // Update Model R2 score if returned from backend
+                if (data.metrics && data.metrics.r2_score) {
+                    const r2El = document.getElementById('modelR2Score');
+                    if (r2El) r2El.innerText = Number(data.metrics.r2_score).toFixed(4);
+                }
+
+                // Evaluate Clinical Alerts across +30m, +60m, +120m
+                evaluateGlucoseAlerts(globalPredictions);
 
                 renderHorizon(currentHorizon);
 
@@ -1373,8 +2249,8 @@
                                 font: { family: 'JetBrains Mono', size: 10 },
                                 callback: (v) => v + ' mg/dL'
                             },
-                            suggestedMin: Math.min(60, Math.min(...dataPoints) - 10),
-                            suggestedMax: Math.max(190, Math.max(...dataPoints) + 15)
+                            suggestedMin: Math.max(30, Math.floor((Math.min(...dataPoints) - 12) / 5) * 5),
+                            suggestedMax: Math.min(400, Math.ceil((Math.max(...dataPoints) + 12) / 5) * 5)
                         }
                     }
                 }
@@ -1396,7 +2272,7 @@
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `glucopredict_${currentHorizon}min_telemetry.csv`;
+            a.download = `glucodex_${currentHorizon}min_telemetry.csv`;
             a.click();
             URL.revokeObjectURL(url);
         }
@@ -1421,7 +2297,7 @@
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `glucopredict_${currentHorizon}min_forecast.json`;
+            a.download = `glucodex_${currentHorizon}min_forecast.json`;
             a.click();
             URL.revokeObjectURL(url);
         }
@@ -1431,7 +2307,7 @@
             const preds = globalPredictions[currentHorizon + '_min'];
             if (!preds) return;
 
-            let text = `GLUCOPREDICT TELEMETRY (${currentHorizon} MIN HORIZON):\n`;
+            let text = `GLUCODEX TELEMETRY (${currentHorizon} MIN HORIZON):\n`;
             preds.forEach((val, i) => {
                 text += `+${(i + 1) * 5} min: ${val.toFixed(1)} mg/dL\n`;
             });
