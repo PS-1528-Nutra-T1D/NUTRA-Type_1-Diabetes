@@ -1,0 +1,2 @@
+**Problem statement:**
+Type-1 diabetes requires continuous glucose monitoring to prevent hypo/hyperglycemia. Existing prediction models can struggle with short- and long-term glucose fluctuations because glucose is affected by CGM measurements, insulin dosage, meals, activity, physiological signals, and patient characteristics. The proposed project investigates a hybrid Transformer–LSTM approach that uses personalized patient information and time-series data to predict blood glucose levels up to **120 minutes ahead**.

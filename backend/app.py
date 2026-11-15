@@ -21,13 +21,17 @@ app.add_middleware(
 
 # Paths & Settings
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-MODEL_FILENAME = "hybrid_lstm_transformer.pth"
+MODEL_FILENAME = "bilstm_transformer_5min.pth"
+if not os.path.exists(os.path.join(BASE_DIR, MODEL_FILENAME)):
+    if os.path.exists(os.path.join(BASE_DIR, "hybrid_lstm_transformer.pth")):
+        MODEL_FILENAME = "hybrid_lstm_transformer.pth"
+
 MODEL_PATH = os.path.join(BASE_DIR, MODEL_FILENAME)
 
 # Fallback download URL in case weights are stored on GitHub Releases / external host
 MODEL_DOWNLOAD_URL = os.getenv(
     "MODEL_DOWNLOAD_URL",
-    "https://github.com/PS-1528-Nutra-T1D/NUTRA-Type_1-Diabetes/raw/main/backend/hybrid_lstm_transformer.pth"
+    f"https://github.com/PS-1528-Nutra-T1D/NUTRA-Type_1-Diabetes/raw/main/backend/{MODEL_FILENAME}"
 )
 
 # Configuration defaults matching training
@@ -57,11 +61,11 @@ def download_weights_if_missing():
 download_weights_if_missing()
 
 # ==================================================
-# MODEL ARCHITECTURE
+# MODEL ARCHITECTURES (Bi-LSTM + Transformer & Legacy)
 # ==================================================
 
 class PositionalEncoding(nn.Module):
-    def __init__(self, hidden_size, max_len=100):
+    def __init__(self, hidden_size, max_len=200):
         super().__init__()
         position = torch.arange(max_len, dtype=torch.float32).unsqueeze(1)
         div_term = torch.exp(
@@ -76,7 +80,62 @@ class PositionalEncoding(nn.Module):
     def forward(self, x):
         return x + self.pe[:, : x.size(1), :]
 
+class BiLSTMTransformer(nn.Module):
+    """V2 State-of-the-art Dual-Branch Bi-LSTM + Multi-Head Self-Attention Transformer"""
+    def __init__(
+        self,
+        num_features=len(FEATURES),
+        hidden_size=HIDDEN_SIZE,
+        num_heads=NUM_HEADS,
+        transformer_layers=NUM_TRANSFORMER_LAYERS,
+        dropout=DROPOUT
+    ):
+        super().__init__()
+        self.proj = nn.Linear(num_features, hidden_size)
+        self.pos = PositionalEncoding(hidden_size, max_len=200)
+        self.bilstm = nn.LSTM(
+            input_size=hidden_size,
+            hidden_size=hidden_size,
+            num_layers=1,
+            batch_first=True,
+            bidirectional=True,
+            dropout=0.0
+        )
+        encoder_layer = nn.TransformerEncoderLayer(
+            d_model=hidden_size,
+            nhead=num_heads,
+            dim_feedforward=hidden_size * 4,
+            dropout=dropout,
+            batch_first=True,
+            activation="gelu",
+        )
+        self.transformer = nn.TransformerEncoder(
+            encoder_layer,
+            num_layers=transformer_layers,
+        )
+        # Bi-LSTM produces 2*hidden_size, Transformer produces hidden_size -> 3*hidden_size combined
+        self.fusion = nn.Sequential(
+            nn.Linear(3 * hidden_size, hidden_size),
+            nn.ReLU(),
+            nn.Dropout(dropout),
+            nn.Linear(hidden_size, hidden_size // 2),
+            nn.ReLU(),
+            nn.Dropout(dropout),
+            nn.Linear(hidden_size // 2, 1),
+        )
+
+    def forward(self, x):
+        x = self.proj(x)
+        x = self.pos(x)
+        lstm_output, _ = self.bilstm(x)
+        transformer_output = self.transformer(x)
+        lstm_features = lstm_output[:, -1, :]
+        transformer_features = transformer_output[:, -1, :]
+        combined = torch.cat([lstm_features, transformer_features], dim=1)
+        return self.fusion(combined)
+
 class HybridLSTMTransformer(nn.Module):
+    """Legacy V1 Single-directional LSTM + Transformer"""
     def __init__(
         self,
         num_features=len(FEATURES),
@@ -87,7 +146,7 @@ class HybridLSTMTransformer(nn.Module):
     ):
         super().__init__()
         self.projection = nn.Linear(num_features, hidden_size)
-        self.position = PositionalEncoding(hidden_size)
+        self.position = PositionalEncoding(hidden_size, max_len=100)
         self.lstm = nn.LSTM(
             input_size=hidden_size,
             hidden_size=hidden_size,
@@ -131,6 +190,7 @@ class HybridLSTMTransformer(nn.Module):
 
 device = torch.device("cpu")  # CPU inference is fast and avoids CUDA memory overhead on Render
 model = None
+model_name = "Hybrid Bi-LSTM + Transformer"
 feature_mean = None
 feature_scale = None
 target_mean = None
@@ -147,23 +207,36 @@ if os.path.exists(MODEL_PATH):
         transformer_layers = ckpt.get("transformer_layers", NUM_TRANSFORMER_LAYERS)
         hr_median = float(ckpt.get("hr_median", 75.0))
         
-        feature_mean = np.array(ckpt.get("feature_mean", [143.82, 75.95, 0.0, 0.0]), dtype=np.float32)
-        feature_scale = np.array(ckpt.get("feature_scale", [58.31, 14.23, 0.71, 0.70]), dtype=np.float32)
-        target_mean = float(ckpt.get("target_mean", [143.82])[0])
-        target_scale = float(ckpt.get("target_scale", [58.31])[0])
+        feature_mean = np.array(ckpt.get("feature_mean", [149.33, 76.67, 0.0, 0.0]), dtype=np.float32)
+        feature_scale = np.array(ckpt.get("feature_scale", [62.50, 14.94, 0.71, 0.70]), dtype=np.float32)
+        target_mean = float(ckpt.get("target_mean", [149.33])[0])
+        target_scale = float(ckpt.get("target_scale", [62.50])[0])
 
-        model = HybridLSTMTransformer(
-            num_features=len(FEATURES),
-            hidden_size=hidden_size,
-            num_heads=num_heads,
-            transformer_layers=transformer_layers,
-            dropout=0.0 # Inference mode
-        ).to(device)
-        
         state_dict = ckpt["model_state_dict"] if "model_state_dict" in ckpt else ckpt
+        is_bilstm = any("bilstm" in k for k in state_dict.keys())
+
+        if is_bilstm:
+            model = BiLSTMTransformer(
+                num_features=len(FEATURES),
+                hidden_size=hidden_size,
+                num_heads=num_heads,
+                transformer_layers=transformer_layers,
+                dropout=0.0
+            ).to(device)
+            model_name = "Hybrid Bi-LSTM + Transformer"
+        else:
+            model = HybridLSTMTransformer(
+                num_features=len(FEATURES),
+                hidden_size=hidden_size,
+                num_heads=num_heads,
+                transformer_layers=transformer_layers,
+                dropout=0.0
+            ).to(device)
+            model_name = "Hybrid LSTM + Transformer"
+
         model.load_state_dict(state_dict)
         model.eval()
-        print("Successfully initialized and loaded HybridLSTMTransformer.")
+        print(f"Successfully initialized and loaded {model_name} from {MODEL_PATH}.")
     except Exception as e:
         print(f"Error loading model weights: {e}")
 else:
@@ -193,7 +266,7 @@ def predict_single_step(window_data):
 def health_check():
     return {
         "status": "healthy",
-        "model": "Hybrid LSTM + Transformer",
+        "model": model_name,
         "model_loaded": model is not None
     }
 
@@ -221,6 +294,7 @@ async def predict(file: UploadFile = File(...)):
             df["ts"] = pd.to_datetime(df["ts"], errors="coerce")
             # If parsing succeeded, calculate minutes
             minutes = df["ts"].dt.hour * 60 + df["ts"].dt.minute
+            minutes = minutes.fillna(0.0)
         else:
             minutes = pd.Series(np.zeros(len(df)))
 
@@ -237,31 +311,64 @@ async def predict(file: UploadFile = File(...)):
         history_df = df[FEATURES].tail(WINDOW_SIZE).copy()
         history = history_df.to_numpy(dtype=np.float32)
 
-        # Auto-regressive multi-step forecast: 6 steps (30 min), 12 steps (60 min), 24 steps (120 min)
-        def generate_forecast(start_history, steps):
+        # Auto-regressive multi-step forecast with physiological momentum decay & mean-reversion
+        last_minute = float(minutes.iloc[-1]) if len(minutes) > 0 else 0.0
+
+        def generate_forecast(start_history, steps, start_minutes=0.0):
             curr_hist = np.copy(start_history)
             forecast = []
-            last_hr = curr_hist[-1, 1]
-            last_sin = curr_hist[-1, 2]
-            last_cos = curr_hist[-1, 3]
+
+            # Clinical baseline for euglycemia mean-reversion (mg/dL)
+            baseline_glucose = 115.0
+            gamma = 0.82       # Momentum decay factor per 5-minute step
+            k_restore = 0.038  # Homeostatic restorative clearance pull
+
+            # Calculate recent velocity
+            recent_vel = float(curr_hist[-1, 0] - curr_hist[-2, 0])
+            if len(curr_hist) >= 4:
+                smoothed_vel = float(curr_hist[-1, 0] - curr_hist[-4, 0]) / 3.0
+            else:
+                smoothed_vel = recent_vel
+
+            vel = 0.5 * recent_vel + 0.5 * smoothed_vel
+            curr_glucose = float(curr_hist[-1, 0])
+            curr_min = float(start_minutes)
+            last_hr = float(curr_hist[-1, 1])
 
             for _ in range(steps):
-                pred_glucose = predict_single_step(curr_hist)
-                # Keep forecast non-negative
-                pred_glucose = max(20.0, pred_glucose)
-                forecast.append(round(pred_glucose, 1))
+                # 1. Advance circadian time features by +5 minutes
+                curr_min = (curr_min + 5.0) % 1440.0
+                step_sin = float(np.sin(2.0 * np.pi * curr_min / 1440.0))
+                step_cos = float(np.cos(2.0 * np.pi * curr_min / 1440.0))
 
-                # Shift window forward
-                next_step = np.array([[pred_glucose, last_hr, last_sin, last_cos]], dtype=np.float32)
+                # 2. Raw model 1-step prediction
+                model_pred = predict_single_step(curr_hist)
+                model_delta = float(model_pred - curr_glucose)
+
+                # 3. Physiological momentum update with damping and homeostatic clearance
+                # Damps runaway feedback; enables natural peaks and return towards baseline
+                vel = (vel * gamma) + (model_delta * (1.0 - gamma)) - k_restore * (curr_glucose - baseline_glucose)
+                curr_glucose += vel
+
+                # Hard clinical safety bounds [40 mg/dL, 400 mg/dL]
+                curr_glucose = float(np.clip(curr_glucose, 40.0, 400.0))
+                forecast.append(round(curr_glucose, 1))
+
+                # 4. Shift window forward with new predicted point and updated time
+                next_step = np.array([[curr_glucose, last_hr, step_sin, step_cos]], dtype=np.float32)
                 curr_hist = np.vstack([curr_hist[1:], next_step])
+
             return forecast
 
-        p30 = generate_forecast(history, 6)
-        p60 = generate_forecast(history, 12)
-        p120 = generate_forecast(history, 24)
+        full_forecast = generate_forecast(history, 24, last_minute)
+        p30 = full_forecast[:6]
+        p60 = full_forecast[:12]
+        p120 = full_forecast[:24]
 
         current_glucose = float(history[-1, 0])
-        spike = p30[0] - current_glucose
+        max_30 = max(p30)
+        min_30 = min(p30)
+        spike = (max_30 - current_glucose) if abs(max_30 - current_glucose) >= abs(min_30 - current_glucose) else (min_30 - current_glucose)
 
         if spike > 40:
             feeling = "⚠️ High Glucose Spike: You may feel a burst of energy, but expect a 'sugar crash' (reactive hypoglycemia) soon, leading to sudden hunger and fatigue."

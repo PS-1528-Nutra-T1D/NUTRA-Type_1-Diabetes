@@ -614,7 +614,10 @@
     /* ═══════════════════════════════════════════════════════
        CONSTANTS & GLOBALS
     ═══════════════════════════════════════════════════════ */
-    const BACKEND_URL = 'https://nutra-type-1-diabetes.onrender.com';
+    // Automatically connect to local server if running locally (file://, localhost, 127.0.0.1), otherwise fallback to Render
+    const BACKEND_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:')
+        ? 'http://127.0.0.1:8000'
+        : 'https://nutra-type-1-diabetes.onrender.com';
     const fileInput   = document.getElementById('csvFile');
     const fileSelected = document.getElementById('file-selected');
     let globalPredictions = null;
@@ -918,7 +921,7 @@
                 const prefs   = JSON.parse(localStorage.getItem('glucoPrefs_' + session.email) || '{}');
                 const high    = parseFloat(prefs.high || 180);
                 const low30   = data.predictions['30_min'];
-                const spike   = low30[0] - (low30[0]);
+                const spike   = low30[low30.length - 1] - low30[0];
                 let status    = 'stable';
                 if (low30.some(v => v > high))  status = 'high';
                 if (low30.some(v => v < (prefs.low || 70))) status = 'low';
