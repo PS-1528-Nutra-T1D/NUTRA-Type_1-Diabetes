@@ -754,6 +754,22 @@
             flex-wrap: wrap;
             gap: 1rem;
         }
+        /* ── Keyboard Focus Accessibility ── */
+        :focus-visible {
+            outline: 2px solid var(--clinical-spruce);
+            outline-offset: 2px;
+        }
+
+        button:focus-visible,
+        .ledger-nav-btn:focus-visible,
+        .theme-toggle-btn:focus-visible,
+        .btn-swiss-primary:focus-visible,
+        .btn-sample:focus-visible,
+        .btn-table-action:focus-visible,
+        .horizon-btn:focus-visible {
+            outline: 2.5px solid var(--clinical-spruce);
+            outline-offset: 3px;
+        }
     </style>
 </head>
 <body>
@@ -778,7 +794,7 @@
             </nav>
 
             <!-- Swiss Theme Switcher Button -->
-            <button class="theme-toggle-btn" id="themeToggleBtn" onclick="toggleTheme()" title="Switch Light/Dark Mode">
+            <button class="theme-toggle-btn" id="themeToggleBtn" onclick="toggleTheme()" title="Switch Light/Dark Mode" aria-label="Toggle light and dark mode">
                 <i class="fa-solid fa-moon" id="themeIcon"></i>
                 <span id="themeLabel">NIGHT LEDGER</span>
             </button>
@@ -845,7 +861,7 @@
                     <span id="rowCountDisplay" style="color:var(--ink-muted);">0 rows</span>
                 </div>
 
-                <button class="btn-swiss-primary" id="predictBtn" onclick="runPrediction()">
+                <button class="btn-swiss-primary" id="predictBtn" onclick="runPrediction()" aria-label="Run glucose trajectory forecast">
                     <span id="btnText">Execute Trajectory Forecast</span>
                 </button>
 
@@ -905,8 +921,9 @@
                     <div class="table-title-row">
                         <h3 class="table-title">Discrete Telemetry Steps</h3>
                         <div class="table-actions">
-                            <button class="btn-table-action" onclick="exportCSV()"><i class="fa-solid fa-download"></i> Export CSV</button>
-                            <button class="btn-table-action" onclick="copyTelemetry()"><i class="fa-regular fa-copy"></i> Copy Data</button>
+                            <button class="btn-table-action" onclick="exportCSV()" aria-label="Export forecast as CSV file"><i class="fa-solid fa-download"></i> Export CSV</button>
+                            <button class="btn-table-action" onclick="exportJSON()" aria-label="Download forecast as JSON file"><i class="fa-solid fa-code"></i> Download JSON</button>
+                            <button class="btn-table-action" onclick="copyTelemetry()" aria-label="Copy forecast data to clipboard"><i class="fa-regular fa-copy"></i> Copy Data</button>
                         </div>
                     </div>
 
@@ -1145,7 +1162,7 @@
             } else if (type === 'drop') {
                 csvData = "GlucoseCGM,HR\n150,70\n140,72\n130,75\n110,78\n90,82\n70,85\n60,88\n55,90\n50,92\n48,90\n45,88\n42,85";
             } else if (type === 'dip_test') {
-                csvData = "Timestamp,GlucoseCGM,HR\n2026-11-15 08:35:00,91.0,88\n2026-11-15 08:40:00,83.4,92\n2026-11-15 08:45:00,76.2,96\n2026-11-15 08:50:00,70.5,101\n2026-11-15 08:55:00,65.8,105\n2026-11-15 09:00:00,62.1,108\n2026-11-15 09:05:00,59.4,110\n2026-11-15 09:10:00,57.8,112\n2026-11-15 09:15:00,56.9,111\n2026-11-15 09:20:00,58.2,109\n2026-11-15 09:25:00,60.5,106";
+                csvData = "Timestamp,GlucoseCGM,HR\n2026-11-15 08:30:00,95.1,85\n2026-11-15 08:35:00,91.0,88\n2026-11-15 08:40:00,83.4,92\n2026-11-15 08:45:00,76.2,96\n2026-11-15 08:50:00,70.5,101\n2026-11-15 08:55:00,65.8,105\n2026-11-15 09:00:00,62.1,108\n2026-11-15 09:05:00,59.4,110\n2026-11-15 09:10:00,57.8,112\n2026-11-15 09:15:00,56.9,111\n2026-11-15 09:20:00,58.2,109\n2026-11-15 09:25:00,60.5,106";
             } else {
                 csvData = "GlucoseCGM,HR\n103.2,58\n101.8,57\n104.5,58\n102.9,59\n101.3,57\n103.7,58\n105.1,59\n103.4,58\n101.9,57\n104.2,58\n102.6,57\n103.8,58";
             }
@@ -1380,6 +1397,31 @@
             const a = document.createElement('a');
             a.href = url;
             a.download = `glucopredict_${currentHorizon}min_telemetry.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function exportJSON() {
+            if (!globalPredictions) return;
+            const preds = globalPredictions[currentHorizon + '_min'];
+            if (!preds) return;
+
+            const payload = {
+                horizon_minutes: parseInt(currentHorizon),
+                baseline_glucose_mgdL: parseFloat(baselineGlucose.toFixed(1)),
+                generated_at: new Date().toISOString(),
+                forecast: preds.map((val, i) => ({
+                    offset_minutes: (i + 1) * 5,
+                    glucose_mgdL: parseFloat(val.toFixed(2)),
+                    status: val > 180 ? 'HYPERGLYCEMIA' : val < 70 ? 'HYPOGLYCEMIA' : 'NORMAL'
+                }))
+            };
+
+            const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `glucopredict_${currentHorizon}min_forecast.json`;
             a.click();
             URL.revokeObjectURL(url);
         }
