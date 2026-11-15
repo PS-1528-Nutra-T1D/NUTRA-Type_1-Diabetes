@@ -318,43 +318,24 @@ async def predict(file: UploadFile = File(...)):
             curr_hist = np.copy(start_history)
             forecast = []
 
-            # Clinical baseline for euglycemia mean-reversion (mg/dL)
-            baseline_glucose = 115.0
-            gamma = 0.82       # Momentum decay factor per 5-minute step
-            k_restore = 0.038  # Homeostatic restorative clearance pull
-
-            # Calculate recent velocity
-            recent_vel = float(curr_hist[-1, 0] - curr_hist[-2, 0])
-            if len(curr_hist) >= 4:
-                smoothed_vel = float(curr_hist[-1, 0] - curr_hist[-4, 0]) / 3.0
-            else:
-                smoothed_vel = recent_vel
-
-            vel = 0.5 * recent_vel + 0.5 * smoothed_vel
-            curr_glucose = float(curr_hist[-1, 0])
             curr_min = float(start_minutes)
             last_hr = float(curr_hist[-1, 1])
 
             for _ in range(steps):
-                # 1. Advance circadian time features by +5 minutes
+                # 1. Advance circadian time by +5 minutes
                 curr_min = (curr_min + 5.0) % 1440.0
                 step_sin = float(np.sin(2.0 * np.pi * curr_min / 1440.0))
                 step_cos = float(np.cos(2.0 * np.pi * curr_min / 1440.0))
 
-                # 2. Raw model 1-step prediction
-                model_pred = predict_single_step(curr_hist)
-                model_delta = float(model_pred - curr_glucose)
+                # 2. Direct model prediction — no manual velocity or mean-reversion
+                #    The Bi-LSTM+Transformer already learned physiological dynamics during training
+                curr_glucose = predict_single_step(curr_hist)
 
-                # 3. Physiological momentum update with damping and homeostatic clearance
-                # Damps runaway feedback; enables natural peaks and return towards baseline
-                vel = (vel * gamma) + (model_delta * (1.0 - gamma)) - k_restore * (curr_glucose - baseline_glucose)
-                curr_glucose += vel
-
-                # Hard clinical safety bounds [40 mg/dL, 400 mg/dL]
+                # Hard clinical safety bounds [40, 400] mg/dL
                 curr_glucose = float(np.clip(curr_glucose, 40.0, 400.0))
                 forecast.append(round(curr_glucose, 1))
 
-                # 4. Shift window forward with new predicted point and updated time
+                # 3. Slide window forward with model output and updated circadian time
                 next_step = np.array([[curr_glucose, last_hr, step_sin, step_cos]], dtype=np.float32)
                 curr_hist = np.vstack([curr_hist[1:], next_step])
 
