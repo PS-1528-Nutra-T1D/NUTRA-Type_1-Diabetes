@@ -41,6 +41,25 @@
             --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
         }
 
+        /* ── Dark Mode // Night Ledger ── */
+        [data-theme="dark"] {
+            --bg-paper: #0E0F12;
+            --surface-card: #15171C;
+            --ink-black: #F4F3EE;
+            --ink-muted: #9C9B94;
+            --ink-faint: #4E5057;
+            --border-heavy: #F4F3EE;
+            --border-hairline: #2A2C34;
+            --border-subtle: #1C1E24;
+
+            --clinical-red: #EF4444;
+            --clinical-red-bg: rgba(239, 68, 68, 0.12);
+            --clinical-amber: #F59E0B;
+            --clinical-amber-bg: rgba(245, 158, 11, 0.12);
+            --clinical-spruce: #10B981;
+            --clinical-spruce-bg: rgba(16, 185, 129, 0.12);
+        }
+
         * {
             box-sizing: border-box;
             margin: 0;
@@ -131,6 +150,35 @@
 
         .ledger-nav-btn:hover:not(.active) {
             background: var(--border-subtle);
+        }
+
+        /* ── Dark Mode Toggle Button ── */
+        .theme-toggle-btn {
+            background: var(--surface-card);
+            border: 2px solid var(--border-heavy);
+            color: var(--ink-black);
+            padding: 0.6rem 1rem;
+            font-family: var(--font-mono);
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            cursor: pointer;
+            box-shadow: 3px 3px 0px var(--border-heavy);
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+            transition: all 0.1s ease;
+        }
+
+        .theme-toggle-btn:hover {
+            transform: translate(-1px, -1px);
+            box-shadow: 4px 4px 0px var(--border-heavy);
+        }
+
+        .theme-toggle-btn:active {
+            transform: translate(2px, 2px);
+            box-shadow: 1px 1px 0px var(--border-heavy);
         }
 
         /* ── System Telemetry Status Bar ── */
@@ -717,15 +765,24 @@
             <span class="brand-spec">Clinical Telemetry // Bi-LSTM + Transformer</span>
         </div>
 
-        <!-- Tab Navigation Switcher -->
-        <nav class="nav-ledger-switch">
-            <button class="ledger-nav-btn active" id="tabNavForecast" onclick="switchMainTab('forecast')">
-                <i class="fa-solid fa-chart-line"></i> 01 // Telemetric Forecast
+        <!-- Navigation & Theme Actions -->
+        <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap;">
+            <!-- Tab Navigation Switcher -->
+            <nav class="nav-ledger-switch">
+                <button class="ledger-nav-btn active" id="tabNavForecast" onclick="switchMainTab('forecast')">
+                    <i class="fa-solid fa-chart-line"></i> 01 // Telemetric Forecast
+                </button>
+                <button class="ledger-nav-btn" id="tabNavWorkflow" onclick="switchMainTab('workflow')">
+                    <i class="fa-solid fa-diagram-project"></i> 02 // Workflow Architecture
+                </button>
+            </nav>
+
+            <!-- Swiss Theme Switcher Button -->
+            <button class="theme-toggle-btn" id="themeToggleBtn" onclick="toggleTheme()" title="Switch Light/Dark Mode">
+                <i class="fa-solid fa-moon" id="themeIcon"></i>
+                <span id="themeLabel">NIGHT LEDGER</span>
             </button>
-            <button class="ledger-nav-btn" id="tabNavWorkflow" onclick="switchMainTab('workflow')">
-                <i class="fa-solid fa-diagram-project"></i> 02 // Workflow Architecture
-            </button>
-        </nav>
+        </div>
     </header>
 
     <!-- ── SYSTEM STATUS STRIP ── -->
@@ -1195,10 +1252,55 @@
             });
         }
 
+        // ── Theme Management (Day Ledger / Night Ledger) ──
+        function getChartColors() {
+            const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+            return {
+                line: isDark ? '#F4F3EE' : '#111213',
+                fill: isDark ? 'rgba(244, 243, 238, 0.06)' : 'rgba(17, 18, 19, 0.04)',
+                pointBorder: isDark ? '#15171C' : '#111213',
+                grid: isDark ? '#2A2C34' : '#E8E6DF',
+                tick: isDark ? '#9C9B94' : '#575752',
+                tooltipBg: isDark ? '#F4F3EE' : '#111213',
+                tooltipTitle: isDark ? '#111213' : '#F4F3EE',
+                tooltipBody: isDark ? '#111213' : '#F4F3EE'
+            };
+        }
+
+        function toggleTheme() {
+            const current = document.documentElement.getAttribute('data-theme') || 'light';
+            const next = current === 'dark' ? 'light' : 'dark';
+            setTheme(next);
+        }
+
+        function setTheme(theme) {
+            document.documentElement.setAttribute('data-theme', theme);
+            localStorage.setItem('glucoTheme', theme);
+            const icon = document.getElementById('themeIcon');
+            const label = document.getElementById('themeLabel');
+            if (icon && label) {
+                if (theme === 'dark') {
+                    icon.className = 'fa-solid fa-sun';
+                    label.innerText = 'DAY LEDGER';
+                } else {
+                    icon.className = 'fa-solid fa-moon';
+                    label.innerText = 'NIGHT LEDGER';
+                }
+            }
+            if (globalPredictions) {
+                renderHorizon(currentHorizon);
+            }
+        }
+
+        // Initialize saved theme
+        const savedTheme = localStorage.getItem('glucoTheme') || (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        setTheme(savedTheme);
+
         // ── Minimalist Swiss Chart.js Renderer ──
         function renderSwissChart(dataPoints) {
             const ctx = document.getElementById('glucoseChart').getContext('2d');
             const labels = dataPoints.map((_, i) => `+${(i + 1) * 5}m`);
+            const colors = getChartColors();
 
             if (glucoseChart) glucoseChart.destroy();
 
@@ -1210,11 +1312,11 @@
                         {
                             label: 'Forecast Trajectory (mg/dL)',
                             data: dataPoints,
-                            borderColor: '#111213',
+                            borderColor: colors.line,
                             borderWidth: 2.2,
-                            backgroundColor: 'rgba(17, 18, 19, 0.04)',
-                            pointBackgroundColor: dataPoints.map(v => v > 180 ? '#B91C1C' : v < 70 ? '#B45309' : '#15803D'),
-                            pointBorderColor: '#111213',
+                            backgroundColor: colors.fill,
+                            pointBackgroundColor: dataPoints.map(v => v > 180 ? '#EF4444' : v < 70 ? '#F59E0B' : '#10B981'),
+                            pointBorderColor: colors.pointBorder,
                             pointBorderWidth: 1.5,
                             pointRadius: 4.5,
                             pointHoverRadius: 6.5,
@@ -1226,11 +1328,13 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    animation: { duration: 300 },
+                    animation: { duration: 250 },
                     plugins: {
                         legend: { display: false },
                         tooltip: {
-                            backgroundColor: '#111213',
+                            backgroundColor: colors.tooltipBg,
+                            titleColor: colors.tooltipTitle,
+                            bodyColor: colors.tooltipBody,
                             titleFont: { family: 'JetBrains Mono', size: 11 },
                             bodyFont: { family: 'JetBrains Mono', size: 12 },
                             cornerRadius: 0,
@@ -1242,13 +1346,13 @@
                     },
                     scales: {
                         x: {
-                            grid: { color: '#E8E6DF', lineWidth: 1 },
-                            ticks: { color: '#575752', font: { family: 'JetBrains Mono', size: 10 } }
+                            grid: { color: colors.grid, lineWidth: 1 },
+                            ticks: { color: colors.tick, font: { family: 'JetBrains Mono', size: 10 } }
                         },
                         y: {
-                            grid: { color: '#E8E6DF', lineWidth: 1 },
+                            grid: { color: colors.grid, lineWidth: 1 },
                             ticks: { 
-                                color: '#575752', 
+                                color: colors.tick, 
                                 font: { family: 'JetBrains Mono', size: 10 },
                                 callback: (v) => v + ' mg/dL'
                             },
