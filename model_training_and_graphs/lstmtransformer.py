@@ -370,7 +370,7 @@ class GlucoseDataset(Dataset):
 
     def __len__(self):
         return len(self.X)
-
+    
     def __getitem__(self, index):
 
         return self.X[index], self.y[index]
@@ -639,6 +639,7 @@ def main():
     splits, hr_median = split_data(df)
 
     # Standardize input and target features.
+    
     feature_scaler = StandardScaler()
     target_scaler = StandardScaler()
 
