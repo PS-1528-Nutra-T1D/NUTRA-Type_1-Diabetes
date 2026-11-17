@@ -1,20 +1,41 @@
 <!doctype html>
 <html lang="en">
   <head>
-    <!-- ── AUTH GUARD: hide page immediately, redirect to /login if not logged in ── -->
-    <style>body { display: none !important; }</style>
+    <!-- ── AUTH GUARD: hide page, redirect to /login if not logged in ── -->
+    <style id="auth-hide-style">body { display: none; }</style>
     <script>
-      (function() {
-        var s = null;
+      (async function guardDashboard() {
+        function revealPage() {
+          var s = document.getElementById('auth-hide-style');
+          if (s) s.remove(); // remove the hiding stylesheet entirely
+          document.body.style.display = 'block';
+        }
         try {
-          s = JSON.parse(localStorage.getItem('glucoSession') || sessionStorage.getItem('glucoSession') || 'null');
-        } catch(e) {}
-        if (!s || !s.loggedIn) {
-          window.location.replace('/login');
-        } else {
-          document.addEventListener('DOMContentLoaded', function() {
-            document.body.style.display = '';
-          });
+          // Check localStorage/sessionStorage session (our custom auth)
+          var session = null;
+          try {
+            session = JSON.parse(
+              localStorage.getItem('glucoSession') ||
+              sessionStorage.getItem('glucoSession') ||
+              'null'
+            );
+          } catch(e) {}
+
+          if (!session || !session.loggedIn) {
+            window.location.replace('/login');
+            return;
+          }
+
+          // Session valid — reveal the page
+          if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', revealPage);
+          } else {
+            revealPage();
+          }
+        } catch (err) {
+          console.error('Auth guard error:', err);
+          // Fallback: always reveal so page never stays blank
+          revealPage();
         }
       })();
     </script>
@@ -28,11 +49,6 @@
       content="GlucoDex: Precision blood glucose trajectory forecasting utilizing dual-branch Bi-LSTM and self-attention Transformer networks with physiological momentum clearance."
     />
     <link rel="icon" type="image/jpeg" href="./glucodex.jpeg" />
-    <script src="https://cdn.jsdelivr.net/npm/@clerk/clerk-js@latest" data-clerk-publishable-key="pk_test_c3BlY2lhbC1raXdpLTEzMzcuY2xlcmsuYWNjb3VudHMuZGV2JA"></script>
-    <script
-      src="https://cdn.jsdelivr.net/npm/@clerk/clerk-js@latest"
-      data-clerk-publishable-key="pk_test_c3BlY2lhbC1raXdpLTEzMzcuY2xlcmsuYWNjb3VudHMuZGV2JA"
-    ></script>
     <!-- Distinctive Typographic Pairing: Fraunces (High-Contrast Editorial Serif) + JetBrains Mono (Technical Monospace) -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
