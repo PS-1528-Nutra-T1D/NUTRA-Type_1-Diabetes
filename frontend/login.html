@@ -361,10 +361,7 @@
                 <select id="signup-type">
                     <option value="">Select your type…</option>
                     <option value="type1">Type 1 Diabetes</option>
-                    <option value="type2">Type 2 Diabetes</option>
-                    <option value="prediabetes">Pre-Diabetes</option>
-                    <option value="gestational">Gestational Diabetes</option>
-                    <option value="other">Other / Research</option>
+                    <option value="research">Research</option>
                 </select>
             </div>
         </div>
@@ -491,14 +488,14 @@
             if (remember) localStorage.setItem('glucoSession', JSON.stringify(sessionData));
             else sessionStorage.setItem('glucoSession', JSON.stringify(sessionData));
             showAlert('Welcome back, ' + user.name.split(' ')[0] + '! Redirecting…', 'success');
-            setTimeout(() => window.location.href = 'index.html', 1200);
+            setTimeout(() => window.location.replace('/dashboard'), 1200);
         } else {
             // Demo fallback — allow demo@gluco.ai / demo1234
             if (email === 'demo@gluco.ai' && pass === 'demo1234') {
                 const demo = { name: 'Demo User', email, diabetesType: 'type1', loggedIn: true };
                 sessionStorage.setItem('glucoSession', JSON.stringify(demo));
                 showAlert('Demo login successful! Redirecting…', 'success');
-                setTimeout(() => window.location.href = 'index.html', 1200);
+                setTimeout(() => window.location.replace('/dashboard'), 1200);
             } else {
                 showAlert('Invalid email or password. Try demo@gluco.ai / demo1234');
             }
@@ -534,7 +531,7 @@
         const sessionData = { name: fname + ' ' + lname, email, diabetesType: type, loggedIn: true };
         sessionStorage.setItem('glucoSession', JSON.stringify(sessionData));
         showAlert('Account created! Welcome, ' + fname + '! Redirecting…', 'success');
-        setTimeout(() => window.location.href = 'index.html', 1400);
+        setTimeout(() => window.location.replace('/dashboard'), 1400);
         setLoading('signup', false);
     }
 
@@ -551,7 +548,7 @@
 
     // ── Auto-redirect if already logged in ────────────────────────
     const session = JSON.parse(localStorage.getItem('glucoSession') || sessionStorage.getItem('glucoSession') || 'null');
-    if (session && session.loggedIn) window.location.href = 'index.html';
+    if (session && session.loggedIn) window.location.replace('/dashboard');
 </script>
 </body>
 </html>

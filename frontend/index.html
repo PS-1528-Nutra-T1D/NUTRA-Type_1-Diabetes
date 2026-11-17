@@ -1,6 +1,24 @@
 <!doctype html>
 <html lang="en">
   <head>
+    <!-- ── AUTH GUARD: hide page immediately, redirect to /login if not logged in ── -->
+    <style>body { display: none !important; }</style>
+    <script>
+      (function() {
+        var s = null;
+        try {
+          s = JSON.parse(localStorage.getItem('glucoSession') || sessionStorage.getItem('glucoSession') || 'null');
+        } catch(e) {}
+        if (!s || !s.loggedIn) {
+          window.location.replace('/login');
+        } else {
+          document.addEventListener('DOMContentLoaded', function() {
+            document.body.style.display = '';
+          });
+        }
+      })();
+    </script>
+    <!-- ── END AUTH GUARD ── -->
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
@@ -1251,6 +1269,17 @@
         >
           <i class="fa-solid fa-moon" id="themeIcon"></i>
           <span id="themeLabel">NIGHT LEDGER</span>
+        </button>
+
+        <!-- Sign Out Button -->
+        <button
+          class="theme-toggle-btn"
+          onclick="glucoSignOut()"
+          title="Sign Out"
+          style="background:var(--clinical-red-bg); border-color:var(--clinical-red); color:var(--clinical-red);"
+        >
+          <i class="fa-solid fa-right-from-bracket"></i>
+          SIGN OUT
         </button>
       </div>
     </header>
@@ -2693,6 +2722,13 @@
         navigator.clipboard
           .writeText(text)
           .then(() => alert("Telemetry data copied to clipboard."));
+      }
+
+      // ── Sign Out ──────────────────────────────────────────────────────────
+      function glucoSignOut() {
+        localStorage.removeItem('glucoSession');
+        sessionStorage.removeItem('glucoSession');
+        window.location.replace('/login');
       }
     </script>
   </body>
