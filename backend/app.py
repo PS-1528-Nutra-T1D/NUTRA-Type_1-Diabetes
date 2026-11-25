@@ -1,6 +1,8 @@
 import os
 import io
 import json
+import hashlib
+import secrets
 import torch
 import torch.nn as nn
 import numpy as np
@@ -363,6 +365,107 @@ async def get_current_user(
     user_email = x_user_email or "guest@demo.local"
     user_name = x_user_name or "Guest User"
     return {"id": user_id, "email": user_email, "name": user_name}
+
+def hash_password(password: str) -> str:
+    """Hash password using PBKDF2 with SHA-256."""
+    salt = secrets.token_bytes(16)
+    hash_value = hashlib.pbkdf2_hmac('sha256', password.encode('utf-8'), salt, 100000)
+    return f"{salt.hex()}:{hash_value.hex()}"
+
+def verify_password(password: str, password_hash: str) -> bool:
+    """Verify a password against its hash."""
+    if not password_hash or ':' not in password_hash:
+        return False
+    try:
+        salt_hex, hash_hex = password_hash.split(':', 1)
+        salt = bytes.fromhex(salt_hex)
+        hash_value = hashlib.pbkdf2_hmac('sha256', password.encode('utf-8'), salt, 100000)
+        return hash_value.hex() == hash_hex
+    except Exception:
+        return False
+
+@app.post("/api/auth/register")
+async def register_user(register_data: dict):
+    if not supabase:
+        raise HTTPException(status_code=503, detail="Database not configured")
+    try:
+        email = register_data.get("email", "").strip().lower()
+        password = register_data.get("password", "")
+        full_name = register_data.get("full_name", "").strip()
+        
+        if not email or not password:
+            raise HTTPException(status_code=400, detail="Email and password are required")
+        if not full_name:
+            raise HTTPException(status_code=400, detail="Full name is required")
+        if len(password) < 8:
+            raise HTTPException(status_code=400, detail="Password must be at least 8 characters")
+        
+        # Check if email already exists
+        existing = supabase.table("profiles").select("clerk_user_id").eq("email", email).execute()
+        if existing.data:
+            raise HTTPException(status_code=409, detail="An account with this email already exists")
+        
+        # Generate deterministic user ID
+        user_id = f"user_{secrets.token_urlsafe(16)}"
+        password_hash = hash_password(password)
+        
+        # Insert new profile
+        profile_data = {
+            "clerk_user_id": user_id,
+            "email": email,
+            "full_name": full_name,
+            "password_hash": password_hash,
+            "diabetes_type": "type1",
+        }
+        
+        result = supabase.table("profiles").insert(profile_data).execute()
+        if not result.data:
+            raise HTTPException(status_code=500, detail="Failed to create user profile")
+        
+        return {"user_id": user_id, "email": email, "full_name": full_name}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/auth/login")
+async def login_user(login_data: dict):
+    if not supabase:
+        raise HTTPException(status_code=503, detail="Database not configured")
+    try:
+        email = login_data.get("email", "").strip().lower()
+        password = login_data.get("password", "")
+        
+        if not email or not password:
+            raise HTTPException(status_code=400, detail="Email and password are required")
+        
+        # Demo fallback for backward compatibility
+        if email == "demo@gluco.ai" and password == "demo1234":
+            return {"user_id": "demo_user", "email": email, "full_name": "Demo User"}
+        
+        # Look up user by email
+        result = supabase.table("profiles").select("*").eq("email", email).single().execute()
+        if not result.data:
+            raise HTTPException(status_code=401, detail="Invalid email or password")
+        
+        profile = result.data
+        stored_hash = profile.get("password_hash")
+        
+        # If no password hash exists (legacy profile), allow migration on first login
+        if not stored_hash:
+            password_hash = hash_password(password)
+            supabase.table("profiles").update({"password_hash": password_hash}).eq("clerk_user_id", profile["clerk_user_id"]).execute()
+            return {"user_id": profile["clerk_user_id"], "email": profile["email"], "full_name": profile.get("full_name", "User")}
+        
+        # Verify password
+        if not verify_password(password, stored_hash):
+            raise HTTPException(status_code=401, detail="Invalid email or password")
+        
+        return {"user_id": profile["clerk_user_id"], "email": profile["email"], "full_name": profile.get("full_name", "User")}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/")
 def health_check():
