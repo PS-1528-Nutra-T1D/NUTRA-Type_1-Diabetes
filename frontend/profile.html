@@ -427,6 +427,16 @@
                     </select>
                 </div>
             </div>
+            <div class="form-group">
+                <label class="field-label">Preferred Unit</label>
+                <div class="input-wrap">
+                    <i class="icon fa-solid fa-ruler"></i>
+                    <select id="profileUnit" disabled>
+                        <option value="mg/dL">mg/dL</option>
+                        <option value="mmol/L">mmol/L</option>
+                    </select>
+                </div>
+            </div>
             <div style="margin-bottom:1rem;">
                 <label class="field-label">Target Glucose Range (mg/dL)</label>
                 <div class="range-row">
@@ -547,6 +557,14 @@
 </div>
 
 <script>
+    // ── Config ──────────────────────────────────────────────────────
+    const BACKEND_URL =
+        window.location.hostname === "localhost" ||
+        window.location.hostname === "127.0.0.1" ||
+        window.location.protocol === "file:"
+            ? "http://127.0.0.1:8000"
+            : "https://nutra-type-1-diabetes.onrender.com";
+
     // ── Theme ──────────────────────────────────────────────────────
     function toggleTheme() {
         const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
@@ -562,6 +580,40 @@
     const session = JSON.parse(localStorage.getItem('glucoSession') || sessionStorage.getItem('glucoSession') || 'null');
     if (!session || !session.loggedIn) window.location.href = 'login.html';
 
+    function getAuthHeaders() {
+        return {
+            "X-User-Id": session.id || session.clerk_user_id || "",
+            "X-User-Email": session.email || "",
+            "X-User-Name": session.name || "",
+            "Content-Type": "application/json",
+        };
+    }
+
+    async function apiGet(endpoint) {
+        const res = await fetch(BACKEND_URL + endpoint, {
+            method: "GET",
+            headers: getAuthHeaders(),
+        });
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({ detail: res.statusText }));
+            throw new Error(err.detail || "Request failed");
+        }
+        return res.json();
+    }
+
+    async function apiPost(endpoint, data) {
+        const res = await fetch(BACKEND_URL + endpoint, {
+            method: "POST",
+            headers: getAuthHeaders(),
+            body: JSON.stringify(data),
+        });
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({ detail: res.statusText }));
+            throw new Error(err.detail || "Request failed");
+        }
+        return res.json();
+    }
+
     function logout() {
         if (!confirm('Are you sure you want to log out?')) return;
         localStorage.removeItem('glucoSession');
@@ -570,21 +622,73 @@
     }
 
     // ── Load Profile ───────────────────────────────────────────────
-    function loadProfile() {
+    async function loadProfile() {
         if (!session) return;
-        const prefs = JSON.parse(localStorage.getItem('glucoPrefs_' + session.email) || '{}');
 
-        // Hero
-        document.getElementById('heroName').innerText  = session.name || 'User';
-        document.getElementById('heroEmail').innerText = session.email || '';
-        const typeMap = { type1:'Type 1 Diabetes', type2:'Type 2 Diabetes', prediabetes:'Pre-Diabetes', gestational:'Gestational', other:'Other/Research' };
-        document.getElementById('heroDiabetesType').innerText = typeMap[session.diabetesType] || 'Unknown';
+        // Fetch from backend API
+        try {
+            const userId = session.id || session.clerk_user_id || session.email;
+            const profile = await apiGet("/api/profile/" + encodeURIComponent(userId));
+            
+            // Hero
+            document.getElementById('heroName').innerText  = profile.full_name || session.name || 'User';
+            document.getElementById('heroEmail').innerText = profile.email || session.email || '';
+            const typeMap = { type1:'Type 1 Diabetes', type2:'Type 2 Diabetes', prediabetes:'Pre-Diabetes', gestational:'Gestational', other:'Other/Research' };
+            document.getElementById('heroDiabetesType').innerText = typeMap[profile.diabetes_type] || 'Unknown';
 
-        // Initials
-        const parts = (session.name || '?').split(' ');
-        document.getElementById('avatarInitials').innerText = (parts[0][0] + (parts[1]?.[0] || '')).toUpperCase();
+            // Initials
+            const parts = (profile.full_name || session.name || '?').split(' ');
+            document.getElementById('avatarInitials').innerText = (parts[0][0] + (parts[1]?.[0] || '')).toUpperCase();
 
-        // Check saved avatar image
+            // Form fields
+            document.getElementById('profileName').value  = profile.full_name || '';
+            document.getElementById('profileEmail').value = profile.email || '';
+            document.getElementById('profileAge').value   = profile.age || '';
+            document.getElementById('profileBio').value   = profile.bio || '';
+            document.getElementById('profileDiabetesType').value = profile.diabetes_type || 'type1';
+            document.getElementById('profileCGM').value   = profile.cgm_device || '';
+            document.getElementById('profileUnit').value  = profile.preferred_unit || 'mg/dL';
+            document.getElementById('profileLow').value   = profile.target_glucose_low ?? 70;
+            document.getElementById('profileHigh').value  = profile.target_glucose_high ?? 180;
+            document.getElementById('lowVal').innerText   = profile.target_glucose_low ?? 70;
+            document.getElementById('highVal').innerText  = profile.target_glucose_high ?? 180;
+
+            // Cache locally for offline
+            const prefs = {
+                name: profile.full_name,
+                age: profile.age,
+                bio: profile.bio,
+                diabetesType: profile.diabetes_type,
+                cgm: profile.cgm_device,
+                unit: profile.preferred_unit,
+                low: profile.target_glucose_low,
+                high: profile.target_glucose_high,
+            };
+            localStorage.setItem('glucoPrefs_' + session.email, JSON.stringify(prefs));
+        } catch (e) {
+            console.warn("Failed to fetch profile from API, using local cache:", e);
+            // Fallback to localStorage
+            const prefs = JSON.parse(localStorage.getItem('glucoPrefs_' + session.email) || '{}');
+            document.getElementById('heroName').innerText  = session.name || 'User';
+            document.getElementById('heroEmail').innerText = session.email || '';
+            const typeMap = { type1:'Type 1 Diabetes', type2:'Type 2 Diabetes', prediabetes:'Pre-Diabetes', gestational:'Gestational', other:'Other/Research' };
+            document.getElementById('heroDiabetesType').innerText = typeMap[session.diabetesType] || 'Unknown';
+            const parts = (session.name || '?').split(' ');
+            document.getElementById('avatarInitials').innerText = (parts[0][0] + (parts[1]?.[0] || '')).toUpperCase();
+            document.getElementById('profileName').value  = prefs.name  || session.name || '';
+            document.getElementById('profileEmail').value = session.email || '';
+            document.getElementById('profileAge').value   = prefs.age || '';
+            document.getElementById('profileBio').value   = prefs.bio || '';
+            document.getElementById('profileDiabetesType').value = prefs.diabetesType || session.diabetesType || 'type1';
+            document.getElementById('profileCGM').value   = prefs.cgm || '';
+            document.getElementById('profileUnit').value  = prefs.unit || 'mg/dL';
+            document.getElementById('profileLow').value   = prefs.low || 70;
+            document.getElementById('profileHigh').value  = prefs.high || 180;
+            document.getElementById('lowVal').innerText   = prefs.low || 70;
+            document.getElementById('highVal').innerText  = prefs.high || 180;
+        }
+
+        // Avatar
         const savedAvatar = localStorage.getItem('glucoAvatar_' + session.email);
         if (savedAvatar) {
             document.getElementById('avatarEl').style.background = 'none';
@@ -594,25 +698,24 @@
             document.getElementById('avatarEl').insertBefore(img, document.getElementById('avatarEl').firstChild);
         }
 
-        // Form fields
-        document.getElementById('profileName').value  = prefs.name  || session.name || '';
-        document.getElementById('profileEmail').value = session.email || '';
-        document.getElementById('profileAge').value   = prefs.age || '';
-        document.getElementById('profileBio').value   = prefs.bio || '';
-        document.getElementById('profileDiabetesType').value = prefs.diabetesType || session.diabetesType || 'type1';
-        document.getElementById('profileCGM').value   = prefs.cgm || '';
-        document.getElementById('profileLow').value   = prefs.low || 70;
-        document.getElementById('profileHigh').value  = prefs.high || 180;
-        document.getElementById('lowVal').innerText   = prefs.low || 70;
-        document.getElementById('highVal').innerText  = prefs.high || 180;
-
-        // Notif
-        const notif = JSON.parse(localStorage.getItem('glucoNotif_' + session.email) || '{}');
-        document.getElementById('notifHigh').checked  = notif.high  !== false;
-        document.getElementById('notifLow').checked   = notif.low   !== false;
-        document.getElementById('notifSpike').checked = notif.spike !== false;
-        document.getElementById('notifDrop').checked  = notif.drop  !== false;
-        document.getElementById('notifDark').checked  = savedTheme === 'dark';
+        // Notif - fetch from API
+        try {
+            const userId = session.id || session.clerk_user_id || session.email;
+            const prefs = await apiGet("/api/preferences/" + encodeURIComponent(userId));
+            document.getElementById('notifHigh').checked  = prefs.notify_high_glucose !== false;
+            document.getElementById('notifLow').checked   = prefs.notify_low_glucose !== false;
+            document.getElementById('notifSpike').checked = prefs.notify_spike !== false;
+            document.getElementById('notifDrop').checked  = prefs.notify_drop !== false;
+            document.getElementById('notifDark').checked  = prefs.dark_mode_default !== false;
+        } catch (e) {
+            console.warn("Failed to fetch preferences from API, using local cache:", e);
+            const notif = JSON.parse(localStorage.getItem('glucoNotif_' + session.email) || '{}');
+            document.getElementById('notifHigh').checked  = notif.high  !== false;
+            document.getElementById('notifLow').checked   = notif.low   !== false;
+            document.getElementById('notifSpike').checked = notif.spike !== false;
+            document.getElementById('notifDrop').checked  = notif.drop  !== false;
+            document.getElementById('notifDark').checked  = savedTheme === 'dark';
+        }
 
         // Stats
         const history = JSON.parse(localStorage.getItem('glucoHistory_' + session.email) || '[]');
@@ -627,6 +730,7 @@
             document.getElementById('statDays').innerText = '1';
         }
 
+        const prefs = JSON.parse(localStorage.getItem('glucoPrefs_' + session.email) || '{}');
         const avgGlucose = prefs.avgGlucose || '—';
         document.getElementById('statAvgGlucose').innerText = avgGlucose === '—' ? '—' : avgGlucose + ' mg/dL';
 
@@ -677,7 +781,7 @@
     function toggleEdit(section) {
         const ids = section === 'personal'
             ? ['profileName','profileAge','profileBio']
-            : ['profileDiabetesType','profileCGM','profileLow','profileHigh'];
+            : ['profileDiabetesType','profileCGM','profileUnit','profileLow','profileHigh'];
         const saveRowId = section === 'personal' ? 'personalSaveRow' : 'medSaveRow';
         const btnId     = section === 'personal' ? 'editPersonalBtn' : 'editMedBtn';
 
@@ -689,7 +793,7 @@
             : '<i class="fa-solid fa-pen"></i> Edit';
     }
 
-    function savePersonal() {
+    async function savePersonal() {
         const prefs = JSON.parse(localStorage.getItem('glucoPrefs_' + session.email) || '{}');
         prefs.name = document.getElementById('profileName').value;
         prefs.age  = document.getElementById('profileAge').value;
@@ -698,24 +802,53 @@
         session.name = prefs.name;
         sessionStorage.setItem('glucoSession', JSON.stringify(session));
         document.getElementById('heroName').innerText = prefs.name;
+
+        try {
+            await apiPost("/api/profile", {
+                full_name: prefs.name,
+                age: prefs.age ? parseInt(prefs.age) : null,
+                bio: prefs.bio,
+            });
+        } catch (e) {
+            console.warn("Failed to save personal info to API:", e);
+            showToast("Saved locally (offline)", "error");
+            return;
+        }
+
         toggleEdit('personal');
         showToast('Personal info saved!');
     }
 
-    function saveMedical() {
+    async function saveMedical() {
         const prefs = JSON.parse(localStorage.getItem('glucoPrefs_' + session.email) || '{}');
         prefs.diabetesType = document.getElementById('profileDiabetesType').value;
         prefs.cgm   = document.getElementById('profileCGM').value;
+        prefs.unit  = document.getElementById('profileUnit').value;
         prefs.low   = document.getElementById('profileLow').value;
         prefs.high  = document.getElementById('profileHigh').value;
         localStorage.setItem('glucoPrefs_' + session.email, JSON.stringify(prefs));
         document.getElementById('lowVal').innerText  = prefs.low;
         document.getElementById('highVal').innerText = prefs.high;
+
+        try {
+            await apiPost("/api/profile", {
+                diabetes_type: prefs.diabetesType,
+                cgm_device: prefs.cgm,
+                preferred_unit: prefs.unit,
+                target_glucose_low: prefs.low ? parseInt(prefs.low) : 70,
+                target_glucose_high: prefs.high ? parseInt(prefs.high) : 180,
+            });
+        } catch (e) {
+            console.warn("Failed to save medical settings to API:", e);
+            showToast("Saved locally (offline)", "error");
+            return;
+        }
+
         toggleEdit('medical');
         showToast('Medical settings saved!');
     }
 
-    function saveNotifSettings() {
+    async function saveNotifSettings() {
         const notif = {
             high:  document.getElementById('notifHigh').checked,
             low:   document.getElementById('notifLow').checked,
@@ -723,13 +856,33 @@
             drop:  document.getElementById('notifDrop').checked,
         };
         localStorage.setItem('glucoNotif_' + session.email, JSON.stringify(notif));
+
+        try {
+            await apiPost("/api/preferences", {
+                notify_high_glucose: notif.high,
+                notify_low_glucose: notif.low,
+                notify_spike: notif.spike,
+                notify_drop: notif.drop,
+                dark_mode_default: document.getElementById('notifDark').checked,
+            });
+        } catch (e) {
+            console.warn("Failed to save preferences to API:", e);
+        }
     }
 
-    function handleDarkDefault(cb) {
+    async function handleDarkDefault(cb) {
         const theme = cb.checked ? 'dark' : 'light';
         document.documentElement.setAttribute('data-theme', theme);
         document.getElementById('themeIcon').className = theme === 'dark' ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
         localStorage.setItem('glucoTheme', theme);
+
+        try {
+            await apiPost("/api/preferences", {
+                dark_mode_default: cb.checked,
+            });
+        } catch (e) {
+            console.warn("Failed to save dark mode preference to API:", e);
+        }
     }
 
     // ── Avatar Upload ──────────────────────────────────────────────

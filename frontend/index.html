@@ -2163,7 +2163,22 @@
         }
       }
 
-      // ── Persistent Alert Settings (localStorage) ──
+      // ── Auth headers helper ──
+      function getAuthHeaders() {
+        const session = JSON.parse(
+          localStorage.getItem('glucoSession') ||
+          sessionStorage.getItem('glucoSession') ||
+          'null'
+        );
+        if (!session) return {};
+        return {
+          "X-User-Id": session.id || session.clerk_user_id || "",
+          "X-User-Email": session.email || "",
+          "X-User-Name": session.name || "",
+        };
+      }
+
+      // ── Persistent Alert Settings (localStorage + API sync) ──
       function saveAlertSettings() {
         const settings = {
           low: parseFloat(document.getElementById("threshLow").value) || 70,
@@ -2172,6 +2187,56 @@
           notify: document.getElementById("toggleNotify").checked,
         };
         localStorage.setItem("glucodex_alerts", JSON.stringify(settings));
+
+        // Also sync to backend profile
+        syncThresholdsToProfile(settings.low, settings.high);
+      }
+
+      async function syncThresholdsToProfile(low, high) {
+        try {
+          const headers = getAuthHeaders();
+          if (!headers["X-User-Id"]) return;
+          await fetch(BACKEND_URL + "/api/profile", {
+            method: "POST",
+            headers: { ...headers, "Content-Type": "application/json" },
+            body: JSON.stringify({
+              target_glucose_low: low,
+              target_glucose_high: high,
+            }),
+          });
+        } catch (e) {
+          console.warn("Failed to sync thresholds to profile:", e);
+        }
+      }
+
+      async function loadUserThresholdsFromProfile() {
+        try {
+          const session = JSON.parse(
+            localStorage.getItem('glucoSession') ||
+            sessionStorage.getItem('glucoSession') ||
+            'null'
+          );
+          if (!session) return;
+          const userId = session.id || session.clerk_user_id || session.email;
+          const headers = getAuthHeaders();
+          const res = await fetch(BACKEND_URL + "/api/profile/" + encodeURIComponent(userId), {
+            method: "GET",
+            headers: headers,
+          });
+          if (res.ok) {
+            const profile = await res.json();
+            if (profile.target_glucose_low) {
+              document.getElementById("threshLow").value = profile.target_glucose_low;
+            }
+            if (profile.target_glucose_high) {
+              document.getElementById("threshHigh").value = profile.target_glucose_high;
+            }
+            // Save to localStorage for offline
+            saveAlertSettings();
+          }
+        } catch (e) {
+          console.warn("Failed to load thresholds from profile:", e);
+        }
       }
 
       function loadAlertSettings() {
@@ -2192,6 +2257,8 @@
             }
           }
         } catch (e) {}
+        // Load from profile API
+        loadUserThresholdsFromProfile();
       }
       loadAlertSettings();
 
@@ -2439,6 +2506,17 @@
           return;
         }
 
+        const session = JSON.parse(
+          localStorage.getItem('glucoSession') ||
+          sessionStorage.getItem('glucoSession') ||
+          'null'
+        );
+        if (!session || !session.loggedIn) {
+          alert("Session expired. Please log in again.");
+          window.location.replace('/login');
+          return;
+        }
+
         const btn = document.getElementById("predictBtn");
         const btnText = document.getElementById("btnText");
         btn.disabled = true;
@@ -2447,10 +2525,17 @@
         const formData = new FormData();
         formData.append("file", fileInput.files[0]);
 
+        const headers = {
+          "X-User-Id": session.id || session.clerk_user_id || "",
+          "X-User-Email": session.email || "",
+          "X-User-Name": session.name || "",
+        };
+
         try {
           const response = await fetch(BACKEND_URL + "/predict", {
             method: "POST",
             body: formData,
+            headers: headers,
           });
 
           const data = await response.json();
@@ -2467,25 +2552,24 @@
           document.getElementById("currentGlucoseDisplay").innerHTML =
             `${baselineGlucose.toFixed(1)} <span style="font-size:1.1rem;font-family:var(--font-mono);font-weight:500;">mg/dL</span>`;
 
-          // Update diagnostic banner
+          // Update diagnostic banner with backend risk classification
           const banner = document.getElementById("diagnosticBanner");
           const bannerText = document.getElementById("diagnosticText");
           bannerText.innerText =
             data.feeling || "Telemetry trajectory verified.";
 
-          if (
-            data.feeling &&
-            (data.feeling.includes("⚠️") || data.feeling.includes("High"))
-          ) {
-            banner.className = "diagnostic-banner danger";
-          } else if (
-            data.feeling &&
-            (data.feeling.includes("🚨") || data.feeling.includes("Drop"))
-          ) {
+          // Use chip_status from backend for banner styling
+          const chipStatus = data.chip_status || "safe";
+          if (chipStatus === "breach-low") {
             banner.className = "diagnostic-banner warning";
+          } else if (chipStatus === "breach-high") {
+            banner.className = "diagnostic-banner danger";
           } else {
             banner.className = "diagnostic-banner stable";
           }
+
+          // Update risk badge in system bar
+          updateRiskBadge(data.risk_classification, data.chip_status);
 
           // Update Model R2 score if returned from backend
           if (data.metrics && data.metrics.r2_score) {
@@ -2506,6 +2590,29 @@
           btn.disabled = false;
           btnText.innerText = "Execute Trajectory Forecast";
         }
+      }
+
+      // ── Risk Badge Mapping (7-value enum -> UI) ──
+      function updateRiskBadge(riskClassification, chipStatus) {
+        const badgeEl = document.getElementById("systemStatus");
+        const textEl = document.getElementById("systemStatusText");
+        if (!badgeEl || !textEl) return;
+
+        const riskLabels = {
+          "critical_hypo": { label: "CRITICAL HYPO", class: "offline" },
+          "hypo": { label: "HYPOGLYCEMIA", class: "offline" },
+          "rapid_drop": { label: "RAPID DROP", class: "offline" },
+          "critical_hyper": { label: "CRITICAL HYPER", class: "offline" },
+          "hyper": { label: "HYPERGLYCEMIA", class: "offline" },
+          "rapid_rise": { label: "RAPID RISE", class: "offline" },
+          "stable": { label: "STABLE", class: "online" },
+        };
+
+        const risk = riskClassification || "stable";
+        const info = riskLabels[risk] || riskLabels["stable"];
+        
+        badgeEl.className = `status-badge ${info.class}`;
+        textEl.innerText = `${info.label} // ${chipStatus?.toUpperCase() || "SAFE"}`;
       }
 
       // ── Horizon Tab Switcher (+30, +60, +120) ──

@@ -5,3 +5,5 @@ pandas
 numpy
 python-multipart
 requests
+supabase
+python-dotenv

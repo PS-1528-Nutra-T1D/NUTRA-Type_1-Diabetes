@@ -1,16 +1,21 @@
 import os
 import io
+import json
 import torch
 import torch.nn as nn
 import numpy as np
 import pandas as pd
 import requests
-from fastapi import FastAPI, HTTPException, UploadFile, File
+from datetime import datetime, timezone
+from fastapi import FastAPI, HTTPException, UploadFile, File, Header, Depends
 from fastapi.middleware.cors import CORSMiddleware
+from supabase import create_client, Client
+from dotenv import load_dotenv
+
+load_dotenv()
 
 app = FastAPI(title="GlucoDex API")
 
-# Enable CORS for Netlify and local development
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -19,21 +24,17 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Paths & Settings
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 MODEL_FILENAME = "bilstm_transformer_5min.pth"
 MODEL_PATH = os.path.join(BASE_DIR, MODEL_FILENAME)
 
-# Expected size for bilstm_transformer_5min.pth (Bi-LSTM + Transformer)
 EXPECTED_MODEL_SIZE = 790680
 
-# Download URL for the primary model
 MODEL_DOWNLOAD_URL = os.getenv(
     "MODEL_DOWNLOAD_URL",
     f"https://github.com/PS-1528-Nutra-T1D/NUTRA-Type_1-Diabetes/raw/main/backend/{MODEL_FILENAME}"
 )
 
-# Configuration defaults matching training
 WINDOW_SIZE = 12
 FEATURES = ["GlucoseCGM", "HR", "time_sin", "time_cos"]
 HIDDEN_SIZE = 64
@@ -41,10 +42,22 @@ NUM_HEADS = 4
 NUM_TRANSFORMER_LAYERS = 2
 DROPOUT = 0.1
 
+SUPABASE_URL = os.environ.get("SUPABASE_URL")
+SUPABASE_SERVICE_ROLE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
+
+supabase: Client = None
+if SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY:
+    try:
+        supabase = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+        print("Supabase client initialized successfully.")
+    except Exception as e:
+        print(f"Failed to initialize Supabase client: {e}")
+else:
+    print("Warning: SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY not set. Running without database.")
+
 EXPECTED_MODEL_SIZE = 790680
 
 def verify_model_file(path):
-    """Verify downloaded model is a valid PyTorch checkpoint with expected structure."""
     try:
         if not os.path.exists(path):
             return False, "File does not exist"
@@ -53,7 +66,6 @@ def verify_model_file(path):
             return False, "File is empty"
         if size != EXPECTED_MODEL_SIZE:
             return False, f"Size mismatch: got {size}, expected {EXPECTED_MODEL_SIZE}"
-        # Try loading to verify it's a valid checkpoint
         ckpt = torch.load(path, map_location="cpu", weights_only=False)
         if "model_state_dict" not in ckpt and "proj.weight" not in ckpt:
             return False, "Invalid checkpoint structure"
@@ -64,7 +76,6 @@ def verify_model_file(path):
         return False, f"Load error: {e}"
 
 def download_weights_if_missing():
-    """Ensure model file exists on disk. Downloads if missing or invalid."""
     needs_download = False
     if not os.path.exists(MODEL_PATH):
         needs_download = True
@@ -95,12 +106,7 @@ def download_weights_if_missing():
             if os.path.exists(MODEL_PATH):
                 os.remove(MODEL_PATH)
 
-# Trigger check/download on startup
 download_weights_if_missing()
-
-# ==================================================
-# MODEL ARCHITECTURES (Bi-LSTM + Transformer & Legacy)
-# ==================================================
 
 class PositionalEncoding(nn.Module):
     def __init__(self, hidden_size, max_len=200):
@@ -119,7 +125,6 @@ class PositionalEncoding(nn.Module):
         return x + self.pe[:, : x.size(1), :]
 
 class BiLSTMTransformer(nn.Module):
-    """V2 State-of-the-art Dual-Branch Bi-LSTM + Multi-Head Self-Attention Transformer"""
     def __init__(
         self,
         num_features=len(FEATURES),
@@ -151,7 +156,6 @@ class BiLSTMTransformer(nn.Module):
             encoder_layer,
             num_layers=transformer_layers,
         )
-        # Bi-LSTM produces 2*hidden_size, Transformer produces hidden_size -> 3*hidden_size combined
         self.fusion = nn.Sequential(
             nn.Linear(3 * hidden_size, hidden_size),
             nn.ReLU(),
@@ -173,7 +177,6 @@ class BiLSTMTransformer(nn.Module):
         return self.fusion(combined)
 
 class HybridLSTMTransformer(nn.Module):
-    """Legacy V1 Single-directional LSTM + Transformer"""
     def __init__(
         self,
         num_features=len(FEATURES),
@@ -209,6 +212,7 @@ class HybridLSTMTransformer(nn.Module):
             nn.Dropout(dropout),
             nn.Linear(hidden_size, hidden_size // 2),
             nn.ReLU(),
+            nn.Dropout(dropout),
             nn.Linear(hidden_size // 2, 1),
         )
 
@@ -222,11 +226,7 @@ class HybridLSTMTransformer(nn.Module):
         combined = torch.cat([lstm_features, transformer_features], dim=1)
         return self.fusion(combined)
 
-# ==================================================
-# LOAD WEIGHTS & SCALER PARAMETERS
-# ==================================================
-
-device = torch.device("cpu")  # CPU inference is fast and avoids CUDA memory overhead on Render
+device = torch.device("cpu")
 model = None
 model_name = "Hybrid Bi-LSTM + Transformer"
 feature_mean = None
@@ -239,7 +239,6 @@ if os.path.exists(MODEL_PATH):
     try:
         ckpt = torch.load(MODEL_PATH, map_location=device, weights_only=False)
         
-        # Load parameters if stored in checkpoint
         hidden_size = ckpt.get("hidden_size", HIDDEN_SIZE)
         num_heads = ckpt.get("num_heads", NUM_HEADS)
         transformer_layers = ckpt.get("transformer_layers", NUM_TRANSFORMER_LAYERS)
@@ -281,18 +280,12 @@ else:
     print(f"Warning: {MODEL_PATH} not found.")
 
 def scale_features(arr_2d):
-    # Standard scale: (x - mean) / scale
     return (arr_2d - feature_mean) / feature_scale
 
 def inverse_scale_target(val_scaled):
-    # Inverse target: (scaled * scale) + mean
     return (val_scaled * target_scale) + target_mean
 
 def predict_single_step(window_data):
-    """
-    window_data: np.ndarray of shape (WINDOW_SIZE, 4)
-    Returns: unscaled glucose prediction as float
-    """
     scaled = scale_features(window_data)
     tensor_input = torch.tensor(scaled, dtype=torch.float32).unsqueeze(0).to(device)
     with torch.no_grad():
@@ -300,7 +293,6 @@ def predict_single_step(window_data):
     val_scaled = out.item()
     return float(inverse_scale_target(val_scaled))
 
-# Verified Model Performance Metrics (Evaluated on OhioT1DM test benchmark)
 MODEL_METRICS = {
     "model": model_name,
     "r2_score": 0.9926,
@@ -311,12 +303,72 @@ MODEL_METRICS = {
     "horizon": "5-min step-ahead (Rollout 120m)"
 }
 
+RISK_ENUM = [
+    "critical_hypo", "hypo", "stable", "hyper", 
+    "critical_hyper", "rapid_drop", "rapid_rise"
+]
+
+def classify_risk(current_glucose: float, forecast_30: list, forecast_60: list, forecast_120: list, spike: float) -> str:
+    min_30 = min(forecast_30)
+    max_30 = max(forecast_30)
+    min_60 = min(forecast_60)
+    max_60 = max(forecast_60)
+    min_120 = min(forecast_120)
+    max_120 = max(forecast_120)
+    
+    if current_glucose < 54 or min_30 < 54 or min_60 < 54 or min_120 < 54:
+        return "critical_hypo"
+    if current_glucose < 70 or min_30 < 70 or min_60 < 70 or min_120 < 70:
+        return "hypo"
+    if current_glucose > 300 or max_30 > 300 or max_60 > 300 or max_120 > 300:
+        return "critical_hyper"
+    if current_glucose > 240 or max_30 > 240 or max_60 > 240 or max_120 > 240:
+        return "hyper"
+    if spike < -30 or (current_glucose < 90 and spike < -15):
+        return "rapid_drop"
+    if spike > 30 or (current_glucose > 180 and spike > 10):
+        return "rapid_rise"
+    return "stable"
+
+def map_risk_to_chip_status(risk: str) -> str:
+    if risk in ("critical_hypo", "hypo", "rapid_drop"):
+        return "breach-low"
+    if risk in ("critical_hyper", "hyper", "rapid_rise"):
+        return "breach-high"
+    return "safe"
+
+def upsert_profile(clerk_user_id: str, email: str, full_name: str = None):
+    if not supabase:
+        return None
+    try:
+        data = {
+            "clerk_user_id": clerk_user_id,
+            "email": email,
+        }
+        if full_name:
+            data["full_name"] = full_name
+        result = supabase.table("profiles").upsert(data, on_conflict="clerk_user_id").execute()
+        return result.data[0] if result.data else None
+    except Exception as e:
+        print(f"Failed to upsert profile: {e}")
+        return None
+
+async def get_current_user(
+    x_user_id: str = Header(None, alias="X-User-Id"),
+    x_user_email: str = Header(None, alias="X-User-Email"),
+    x_user_name: str = Header(None, alias="X-User-Name")
+):
+    if not x_user_id or not x_user_email:
+        raise HTTPException(status_code=401, detail="Missing user identification headers")
+    return {"id": x_user_id, "email": x_user_email, "name": x_user_name}
+
 @app.get("/")
 def health_check():
     return {
         "status": "healthy",
         "model": model_name,
         "model_loaded": model is not None,
+        "supabase_connected": supabase is not None,
         "metrics": MODEL_METRICS
     }
 
@@ -325,28 +377,29 @@ def get_metrics():
     return MODEL_METRICS
 
 @app.post("/predict")
-async def predict(file: UploadFile = File(...)):
+async def predict(
+    file: UploadFile = File(...),
+    user: dict = Depends(get_current_user)
+):
     if model is None:
         raise HTTPException(status_code=500, detail="Model is not loaded on server.")
+
+    upsert_profile(user["id"], user["email"], user.get("name"))
 
     try:
         contents = await file.read()
         df = pd.read_csv(io.BytesIO(contents))
         
-        # Validate minimum columns: GlucoseCGM is mandatory
         if "GlucoseCGM" not in df.columns:
             raise HTTPException(status_code=400, detail="CSV must contain 'GlucoseCGM' column.")
             
-        # Impute or default HR if missing
         if "HR" not in df.columns:
             df["HR"] = hr_median
         else:
             df["HR"] = df["HR"].fillna(hr_median)
 
-        # Parse or create timestamps for time-of-day features
         if "ts" in df.columns:
             df["ts"] = pd.to_datetime(df["ts"], errors="coerce")
-            # If parsing succeeded, calculate minutes
             minutes = df["ts"].dt.hour * 60 + df["ts"].dt.minute
             minutes = minutes.fillna(0.0)
         else:
@@ -361,24 +414,20 @@ async def predict(file: UploadFile = File(...)):
                 detail=f"CSV must have at least {WINDOW_SIZE} rows. Provided: {len(df)}"
             )
 
-        # Extract the last WINDOW_SIZE rows for inference
         history_df = df[FEATURES].tail(WINDOW_SIZE).copy()
         history = history_df.to_numpy(dtype=np.float32)
 
-        # Auto-regressive multi-step forecast with physiological momentum decay & mean-reversion
         last_minute = float(minutes.iloc[-1]) if len(minutes) > 0 else 0.0
 
         def generate_forecast(start_history, steps, start_minutes=0.0):
             curr_hist = np.copy(start_history)
             forecast = []
 
-            # Extract physiological velocity and momentum from historical window
             g_hist = curr_hist[:, 0]
             v1 = float(g_hist[-1] - g_hist[-2])
             v3 = float(g_hist[-1] - g_hist[-4]) / 3.0 if len(g_hist) >= 4 else v1
             v6 = float(g_hist[-1] - g_hist[-7]) / 6.0 if len(g_hist) >= 7 else v3
 
-            # Blend velocity: 50% recent 5-min slope, 30% 15-min slope, 20% 30-min trend
             vel = 0.5 * v1 + 0.3 * v3 + 0.2 * v6
             vel = float(np.clip(vel, -15.0, 15.0))
 
@@ -386,30 +435,24 @@ async def predict(file: UploadFile = File(...)):
             curr_min = float(start_minutes)
             last_hr = float(curr_hist[-1, 1])
 
-            # Physiological clearance dynamics
-            gamma = 0.88       # Momentum persistence factor
-            k_restore = 0.015  # Homeostatic restorative pull toward euglycemic baseline
-            target_eq = 115.0  # Euglycemic setpoint
+            gamma = 0.88
+            k_restore = 0.015
+            target_eq = 115.0
 
             for _ in range(steps):
-                # 1. Advance circadian time by +5 minutes
                 curr_min = (curr_min + 5.0) % 1440.0
                 step_sin = float(np.sin(2.0 * np.pi * curr_min / 1440.0))
                 step_cos = float(np.cos(2.0 * np.pi * curr_min / 1440.0))
 
-                # 2. Neural network single-step prediction
                 nn_pred = predict_single_step(curr_hist)
                 nn_delta = float(nn_pred - curr_glucose)
 
-                # 3. Dynamic momentum update: blend NN inflection with physiological momentum & clearance
                 vel = (vel * gamma) + (nn_delta * (1.0 - gamma)) - k_restore * (curr_glucose - target_eq)
                 curr_glucose += vel
 
-                # Hard clinical safety bounds [40, 400] mg/dL
                 curr_glucose = float(np.clip(curr_glucose, 40.0, 400.0))
                 forecast.append(round(curr_glucose, 1))
 
-                # 4. Slide window forward with predicted point and updated circadian time
                 next_step = np.array([[curr_glucose, last_hr, step_sin, step_cos]], dtype=np.float32)
                 curr_hist = np.vstack([curr_hist[1:], next_step])
 
@@ -424,6 +467,9 @@ async def predict(file: UploadFile = File(...)):
         max_30 = max(p30)
         min_30 = min(p30)
         spike = (max_30 - current_glucose) if abs(max_30 - current_glucose) >= abs(min_30 - current_glucose) else (min_30 - current_glucose)
+
+        risk_classification = classify_risk(current_glucose, p30, p60, p120, spike)
+        chip_status = map_risk_to_chip_status(risk_classification)
 
         if current_glucose < 70 or min_30 < 70:
             feeling = "🚨 Critical Hypoglycemia Warning: Glucose is below clinical safety threshold (< 70 mg/dL). Immediate fast-acting carbohydrate intake needed."
@@ -442,6 +488,92 @@ async def predict(file: UploadFile = File(...)):
         else:
             feeling = "Stable: Glucose trajectory is maintaining homeostatic balance."
 
+        csv_batch_id = None
+        if supabase:
+            try:
+                batch_data = {
+                    "clerk_user_id": user["id"],
+                    "filename": file.filename or "upload.csv",
+                    "file_size_bytes": len(contents),
+                    "row_count": len(df),
+                    "columns_detected": list(df.columns),
+                    "has_hr_column": "HR" in df.columns,
+                    "has_ts_column": "ts" in df.columns,
+                }
+                batch_result = supabase.table("csv_upload_batches").insert(batch_data).execute()
+                if batch_result.data:
+                    csv_batch_id = batch_result.data[0]["id"]
+            except Exception as e:
+                print(f"Failed to log CSV batch: {e}")
+
+        prediction_id = None
+        if supabase:
+            try:
+                input_window = history.tolist()
+                input_window_start = df["ts"].iloc[-WINDOW_SIZE].isoformat() if "ts" in df.columns and not pd.isna(df["ts"].iloc[-WINDOW_SIZE]) else datetime.now(timezone.utc).isoformat()
+                input_window_end = df["ts"].iloc[-1].isoformat() if "ts" in df.columns and not pd.isna(df["ts"].iloc[-1]) else datetime.now(timezone.utc).isoformat()
+
+                pred_data = {
+                    "clerk_user_id": user["id"],
+                    "csv_batch_id": csv_batch_id,
+                    "model_name": model_name,
+                    "model_version": os.path.basename(MODEL_PATH),
+                    "input_window": input_window,
+                    "input_window_start": input_window_start,
+                    "input_window_end": input_window_end,
+                    "current_glucose": current_glucose,
+                    "forecast_30min": p30,
+                    "forecast_60min": p60,
+                    "forecast_120min": p120,
+                    "risk_classification": risk_classification,
+                    "feeling_text": feeling,
+                    "metrics_snapshot": MODEL_METRICS,
+                }
+                pred_result = supabase.table("predictions").insert(pred_data).execute()
+                if pred_result.data:
+                    prediction_id = pred_result.data[0]["id"]
+            except Exception as e:
+                print(f"Failed to save prediction: {e}")
+
+        if supabase and prediction_id:
+            try:
+                profile_result = supabase.table("profiles").select("target_glucose_low, target_glucose_high").eq("clerk_user_id", user["id"]).single().execute()
+                if profile_result.data:
+                    low_thresh = profile_result.data["target_glucose_low"]
+                    high_thresh = profile_result.data["target_glucose_high"]
+                    
+                    alerts = []
+                    
+                    for horizon_min, forecast in [(30, p30), (60, p60), (120, p120)]:
+                        min_val = min(forecast)
+                        max_val = max(forecast)
+                        
+                        if min_val < low_thresh:
+                            alerts.append({
+                                "clerk_user_id": user["id"],
+                                "prediction_id": prediction_id,
+                                "alert_type": "hypo",
+                                "horizon_minutes": horizon_min,
+                                "predicted_value": min_val,
+                                "threshold_value": low_thresh,
+                                "breach_direction": "below",
+                            })
+                        if max_val > high_thresh:
+                            alerts.append({
+                                "clerk_user_id": user["id"],
+                                "prediction_id": prediction_id,
+                                "alert_type": "hyper",
+                                "horizon_minutes": horizon_min,
+                                "predicted_value": max_val,
+                                "threshold_value": high_thresh,
+                                "breach_direction": "above",
+                            })
+                    
+                    if alerts:
+                        supabase.table("alert_events").insert(alerts).execute()
+            except Exception as e:
+                print(f"Failed to save alert events: {e}")
+
         return {
             "predictions": {
                 "30_min": p30,
@@ -449,10 +581,98 @@ async def predict(file: UploadFile = File(...)):
                 "120_min": p120
             },
             "feeling": feeling,
+            "risk_classification": risk_classification,
+            "chip_status": chip_status,
             "metrics": MODEL_METRICS
         }
 
     except HTTPException as he:
         raise he
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/profile/{user_id}")
+async def get_profile(user_id: str):
+    if not supabase:
+        raise HTTPException(status_code=503, detail="Database not configured")
+    try:
+        result = supabase.table("profiles").select("*").eq("clerk_user_id", user_id).single().execute()
+        if not result.data:
+            raise HTTPException(status_code=404, detail="Profile not found")
+        return result.data
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/profile")
+async def upsert_profile_endpoint(
+    profile_data: dict,
+    user: dict = Depends(get_current_user)
+):
+    if not supabase:
+        raise HTTPException(status_code=503, detail="Database not configured")
+    try:
+        allowed_fields = {
+            "full_name", "age", "bio", "diabetes_type", "cgm_device",
+            "target_glucose_low", "target_glucose_high", "preferred_unit", "avatar_url"
+        }
+        data = {"clerk_user_id": user["id"], "email": user["email"]}
+        for key, value in profile_data.items():
+            if key in allowed_fields:
+                data[key] = value
+        
+        result = supabase.table("profiles").upsert(data, on_conflict="clerk_user_id").execute()
+        if not result.data:
+            raise HTTPException(status_code=500, detail="Failed to upsert profile")
+        return result.data[0]
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/preferences/{user_id}")
+async def get_preferences(user_id: str):
+    if not supabase:
+        raise HTTPException(status_code=503, detail="Database not configured")
+    try:
+        result = supabase.table("user_preferences").select("*").eq("clerk_user_id", user_id).single().execute()
+        if not result.data:
+            return {
+                "notify_high_glucose": True,
+                "notify_low_glucose": True,
+                "notify_spike": True,
+                "notify_drop": True,
+                "dark_mode_default": False,
+                "audio_chime_enabled": True,
+                "desktop_notify_enabled": False,
+            }
+        return result.data
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/preferences")
+async def upsert_preferences_endpoint(
+    prefs_data: dict,
+    user: dict = Depends(get_current_user)
+):
+    if not supabase:
+        raise HTTPException(status_code=503, detail="Database not configured")
+    try:
+        allowed_fields = {
+            "notify_high_glucose", "notify_low_glucose", "notify_spike", "notify_drop",
+            "dark_mode_default", "audio_chime_enabled", "desktop_notify_enabled"
+        }
+        data = {"clerk_user_id": user["id"]}
+        for key, value in prefs_data.items():
+            if key in allowed_fields:
+                data[key] = value
+        
+        result = supabase.table("user_preferences").upsert(data, on_conflict="clerk_user_id").execute()
+        if not result.data:
+            raise HTTPException(status_code=500, detail="Failed to upsert preferences")
+        return result.data[0]
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
