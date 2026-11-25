@@ -579,12 +579,13 @@
     // ── Session ────────────────────────────────────────────────────
     const session = JSON.parse(localStorage.getItem('glucoSession') || sessionStorage.getItem('glucoSession') || 'null');
     if (!session || !session.loggedIn) window.location.href = 'login.html';
+    const isLoggedIn = session && session.loggedIn;
 
     function getAuthHeaders() {
         return {
-            "X-User-Id": session.id || session.clerk_user_id || "",
-            "X-User-Email": session.email || "",
-            "X-User-Name": session.name || "",
+            "X-User-Id": isLoggedIn ? (session.id || session.clerk_user_id || "") : "guest_demo_user",
+            "X-User-Email": isLoggedIn ? (session.email || "") : "guest@demo.local",
+            "X-User-Name": isLoggedIn ? (session.name || "") : "Guest User",
             "Content-Type": "application/json",
         };
     }

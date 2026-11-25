@@ -358,9 +358,11 @@ async def get_current_user(
     x_user_email: str = Header(None, alias="X-User-Email"),
     x_user_name: str = Header(None, alias="X-User-Name")
 ):
-    if not x_user_id or not x_user_email:
-        raise HTTPException(status_code=401, detail="Missing user identification headers")
-    return {"id": x_user_id, "email": x_user_email, "name": x_user_name}
+    # Guest fallback: if headers missing or empty, use guest_demo_user
+    user_id = x_user_id or "guest_demo_user"
+    user_email = x_user_email or "guest@demo.local"
+    user_name = x_user_name or "Guest User"
+    return {"id": user_id, "email": user_email, "name": user_name}
 
 @app.get("/")
 def health_check():
