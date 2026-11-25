@@ -1,938 +1,380 @@
-<!DOCTYPE html>
-<html lang="en" data-theme="light">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Profile | GlucoDex</title>
-    <link rel="icon" type="image/jpeg" href="./glucodex.jpeg">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<!doctype html>
+<html lang="en">
+  <head>
+    <style id="auth-hide-style">body { display: none; }</style>
+    <script>
+      (async function guardProfile() {
+        function revealPage() {
+          var s = document.getElementById('auth-hide-style');
+          if (s) s.remove();
+          document.body.style.display = 'block';
+        }
+        try {
+          var session = null;
+          try {
+            session = JSON.parse(
+              localStorage.getItem('glucoSession') ||
+              sessionStorage.getItem('glucoSession') ||
+              'null'
+            );
+          } catch(e) {}
+          if (!session || !session.loggedIn) {
+            window.location.replace('/login');
+            return;
+          }
+          if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', revealPage);
+          } else {
+            revealPage();
+          }
+        } catch (err) {
+          console.error('Auth guard error:', err);
+          revealPage();
+        }
+      })();
+    </script>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GLUCODEX // Clinical Profile Ledger</title>
+    <link rel="icon" type="image/jpeg" href="./glucodex.jpeg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400&family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+    />
     <style>
-        :root {
-            --primary: #0284c7; --primary-light: #0ea5e9; --primary-hover: #0369a1;
-            --primary-bg: #f0f9ff; --accent: #06b6d4;
-            --text-main: #0f172a; --text-muted: #64748b; --white: #ffffff;
-            --danger: #ef4444; --danger-bg: #fef2f2;
-            --success: #10b981; --success-bg: #f0fdf4;
-            --warning: #f59e0b; --warning-bg: #fffbeb;
-            --border: #e2e8f0;
-            --bg-body: #f1f5f9; --card-bg: #ffffff; --input-bg: #f8fafc;
-            --shadow: 0 10px 40px rgba(79,70,229,0.1), 0 4px 15px rgba(0,0,0,0.06);
-            --radius: 20px; --radius-sm: 12px;
-        }
-        [data-theme="dark"] {
-            --primary: #38bdf8;
-            --primary-light: #7dd3fc;
-            --primary-hover: #0284c7;
-            --primary-bg: rgba(56, 189, 248, 0.1);
-            --secondary: #1e293b;
-            --accent: #2dd4bf;
-            --text-main: #f8fafc;
-            --text-muted: #94a3b8;
-            --white: #0f172a;
-            --border: #334155;
-            --bg-body: #090d16;
-            --bg-page: #090d16;
-            --card-bg: #111827;
-            --input-bg: #1e293b;
-            --input-border: #334155;
-            --shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
-            --shadow: 0 4px 12px rgba(0,0,0,0.35);
-            --shadow-lg: 0 10px 25px rgba(0,0,0,0.5);
-            --danger: #f87171;
-            --danger-bg: rgba(239, 68, 68, 0.12);
-            --success: #4ade80;
-            --success-bg: rgba(34, 197, 94, 0.12);
-            --warning: #fbbf24;
-            --warning-bg: rgba(245, 158, 11, 0.12);
-        }
-
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body {
-            font-family: 'Inter', system-ui, sans-serif;
-            background: var(--bg-body); color: var(--text-main);
-            min-height: 100vh; transition: background 0.3s, color 0.3s;
-        }
-
-        /* ── Navbar ── */
-        .navbar {
-            background: var(--card-bg); border-bottom: 1px solid var(--border);
-            padding: 0 2rem; height: 64px;
-            display: flex; align-items: center; justify-content: space-between;
-            position: sticky; top: 0; z-index: 100;
-            box-shadow: 0 1px 8px rgba(0,0,0,0.06);
-        }
-        .nav-brand {
-            display: flex; align-items: center; gap: 10px;
-            font-weight: 800; font-size: 1.1rem; color: var(--text-main);
-            text-decoration: none;
-        }
-        .nav-brand .logo-dot {
-            width: 36px; height: 36px;
-            background: linear-gradient(135deg, var(--primary), var(--accent));
-            border-radius: 10px; display: flex; align-items: center; justify-content: center;
-        }
-        .nav-brand .logo-dot i { color: white; font-size: 1rem; }
-        .nav-actions { display: flex; align-items: center; gap: 0.8rem; }
-        .nav-link {
-            padding: 8px 16px; border-radius: 10px;
-            font-size: 0.88rem; font-weight: 600;
-            color: var(--text-muted); cursor: pointer;
-            text-decoration: none; transition: all 0.2s;
-            border: none; background: none;
-        }
-        .nav-link:hover { background: var(--primary-bg); color: var(--primary); }
-        .nav-link.active { background: var(--primary-bg); color: var(--primary); }
-        .theme-btn {
-            width: 38px; height: 38px; border-radius: 10px;
-            border: 1.5px solid var(--border); background: var(--card-bg);
-            color: var(--text-muted); cursor: pointer; font-size: 1rem;
-            display: flex; align-items: center; justify-content: center;
-            transition: all 0.2s;
-        }
-        .theme-btn:hover { border-color: var(--primary); color: var(--primary); }
-        .logout-btn {
-            padding: 8px 14px; border-radius: 10px;
-            font-size: 0.85rem; font-weight: 600;
-            color: var(--danger); border: 1.5px solid #fecaca;
-            background: var(--danger-bg); cursor: pointer;
-            transition: all 0.2s; font-family: inherit;
-        }
-        .logout-btn:hover { background: var(--danger); color: white; }
-
-        /* ── Page layout ── */
-        .page { max-width: 900px; margin: 0 auto; padding: 2rem 1.5rem; }
-
-        /* ── Profile Header ── */
-        .profile-hero {
-            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
-            border-radius: var(--radius); padding: 2.5rem 2rem;
-            display: flex; align-items: center; gap: 2rem;
-            margin-bottom: 1.5rem; position: relative; overflow: hidden;
-            animation: slideUp 0.4s ease;
-        }
-        .profile-hero::before {
-            content: ''; position: absolute; inset: 0;
-            background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
-        }
-        .avatar {
-            width: 90px; height: 90px; border-radius: 50%;
-            background: rgba(255,255,255,0.25); border: 3px solid rgba(255,255,255,0.5);
-            display: flex; align-items: center; justify-content: center;
-            font-size: 2.2rem; font-weight: 800; color: white;
-            flex-shrink: 0; cursor: pointer; transition: transform 0.2s;
-            position: relative; overflow: hidden;
-        }
-        .avatar:hover { transform: scale(1.05); }
-        .avatar-upload-overlay {
-            position: absolute; inset: 0; background: rgba(0,0,0,0.4);
-            display: flex; align-items: center; justify-content: center;
-            opacity: 0; transition: opacity 0.2s; border-radius: 50%;
-        }
-        .avatar:hover .avatar-upload-overlay { opacity: 1; }
-        .avatar-upload-overlay i { color: white; font-size: 1.2rem; }
-        .hero-info { color: white; flex: 1; position: relative; }
-        .hero-info h1 { font-size: 1.8rem; font-weight: 800; }
-        .hero-info p { opacity: 0.85; font-size: 0.92rem; margin-top: 0.2rem; }
-        .diabetes-badge {
-            display: inline-flex; align-items: center; gap: 6px;
-            background: rgba(255,255,255,0.2); padding: 5px 14px;
-            border-radius: 20px; font-size: 0.8rem; font-weight: 700;
-            margin-top: 0.8rem; border: 1px solid rgba(255,255,255,0.3);
-        }
-        .hero-stats {
-            display: flex; gap: 1.5rem; margin-top: 1.2rem;
-            flex-wrap: wrap;
-        }
-        .hero-stat { text-align: center; }
-        .hero-stat .val { font-size: 1.4rem; font-weight: 800; }
-        .hero-stat .lbl { font-size: 0.72rem; opacity: 0.75; text-transform: uppercase; letter-spacing: 0.5px; }
-
-        @keyframes slideUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
-
-        /* ── Grid ── */
-        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; }
-        .grid.full { grid-template-columns: 1fr; }
-
-        /* ── Card ── */
-        .card {
-            background: var(--card-bg); border-radius: var(--radius);
-            padding: 1.8rem; border: 1px solid var(--border);
-            box-shadow: var(--shadow); animation: slideUp 0.4s ease;
-        }
-        .card-header {
-            display: flex; align-items: center; justify-content: space-between;
-            margin-bottom: 1.4rem;
-        }
-        .card-title {
-            font-size: 0.8rem; font-weight: 700; text-transform: uppercase;
-            letter-spacing: 0.5px; color: var(--text-muted);
-            display: flex; align-items: center; gap: 0.5rem;
-        }
-        .card-title i { color: var(--primary); }
-        .edit-btn {
-            font-size: 0.82rem; font-weight: 600; color: var(--primary);
-            background: var(--primary-bg); border: none; cursor: pointer;
-            padding: 5px 12px; border-radius: 8px; font-family: inherit;
-            transition: all 0.2s;
-        }
-        .edit-btn:hover { background: var(--primary); color: white; }
-
-        /* ── Form Elements ── */
-        .form-group { margin-bottom: 1rem; }
-        label.field-label {
-            display: block; font-size: 0.78rem; font-weight: 600;
-            color: var(--text-muted); margin-bottom: 0.4rem;
-            text-transform: uppercase; letter-spacing: 0.3px;
-        }
-        .input-wrap { position: relative; }
-        .input-wrap i.icon {
-            position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
-            color: var(--text-muted); font-size: 0.88rem;
-        }
-        input[type="text"], input[type="email"], input[type="number"], select, textarea {
-            width: 100%; padding: 0.7rem 0.9rem 0.7rem 2.4rem;
-            border: 1.5px solid var(--border); border-radius: 10px;
-            background: var(--input-bg); color: var(--text-main);
-            font-size: 0.92rem; font-family: inherit;
-            transition: border-color 0.2s; outline: none;
-        }
-        textarea { padding-left: 0.9rem; resize: vertical; min-height: 80px; }
-        input:focus, select:focus, textarea:focus {
-            border-color: var(--primary-light);
-            box-shadow: 0 0 0 3px rgba(79,70,229,0.1);
-        }
-        input:disabled, select:disabled, textarea:disabled {
-            opacity: 0.6; cursor: not-allowed;
-        }
-        select { appearance: none; cursor: pointer; }
-
-        /* ── Range slider ── */
-        .range-row { display: flex; gap: 0.8rem; align-items: flex-end; }
-        .range-row .form-group { flex: 1; margin-bottom: 0; }
-        .range-label { font-size: 0.72rem; color: var(--text-muted); text-align: center; margin-top: 0.3rem; }
-        input[type="range"] {
-            padding: 0; border: none; background: none;
-            accent-color: var(--primary); cursor: pointer; height: auto;
-        }
-        input[type="range"]:focus { box-shadow: none; }
-        .range-val { font-size: 1rem; font-weight: 700; color: var(--primary); text-align: center; }
-
-        /* ── Toggle switch ── */
-        .toggle-row {
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 0.8rem 0; border-bottom: 1px solid var(--border);
-        }
-        .toggle-row:last-child { border-bottom: none; }
-        .toggle-info .toggle-title { font-size: 0.92rem; font-weight: 600; }
-        .toggle-info .toggle-desc { font-size: 0.78rem; color: var(--text-muted); margin-top: 2px; }
-        .switch { position: relative; width: 44px; height: 24px; flex-shrink: 0; }
-        .switch input { opacity: 0; width: 0; height: 0; }
-        .slider {
-            position: absolute; inset: 0; cursor: pointer;
-            background: var(--border); border-radius: 24px; transition: 0.3s;
-        }
-        .slider:before {
-            content: ''; position: absolute;
-            width: 18px; height: 18px; left: 3px; bottom: 3px;
-            background: white; border-radius: 50%; transition: 0.3s;
-        }
-        input:checked + .slider { background: var(--primary); }
-        input:checked + .slider:before { transform: translateX(20px); }
-
-        /* ── History log ── */
-        .history-item {
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 0.9rem 1rem; background: var(--input-bg);
-            border-radius: 10px; border: 1px solid var(--border);
-            margin-bottom: 0.6rem; font-size: 0.88rem;
-            transition: background 0.15s;
-        }
-        .history-item:hover { background: var(--primary-bg); }
-        .history-left .date { font-weight: 600; color: var(--text-main); }
-        .history-left .file { font-size: 0.75rem; color: var(--text-muted); margin-top: 2px; }
-        .history-right { display: flex; gap: 0.5rem; align-items: center; }
-        .hist-badge {
-            padding: 3px 10px; border-radius: 20px; font-size: 0.72rem; font-weight: 700;
-        }
-        .hist-badge.stable  { background: #f0fdf4; color: #065f46; }
-        .hist-badge.high    { background: #fef2f2; color: #b91c1c; }
-        .hist-badge.low     { background: #fffbeb; color: #92400e; }
-        .hist-del { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 0.85rem; padding: 4px; border-radius: 6px; transition: all 0.2s; }
-        .hist-del:hover { background: var(--danger-bg); color: var(--danger); }
-
-        /* ── Save button ── */
-        .btn-save {
-            padding: 0.7rem 1.6rem;
-            background: linear-gradient(135deg, var(--primary), var(--primary-light));
-            color: white; border: none; border-radius: 10px;
-            font-size: 0.9rem; font-weight: 700; cursor: pointer;
-            transition: all 0.2s; font-family: inherit;
-            box-shadow: 0 4px 12px rgba(79,70,229,0.35);
-        }
-        .btn-save:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(79,70,229,0.45); }
-
-        /* ── Alert toast ── */
-        .toast {
-            position: fixed; bottom: 1.5rem; right: 1.5rem;
-            background: #10b981; color: white;
-            padding: 0.8rem 1.4rem; border-radius: 12px;
-            font-size: 0.88rem; font-weight: 600;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.15);
-            display: flex; align-items: center; gap: 0.6rem;
-            z-index: 9999; transform: translateY(80px); opacity: 0;
-            transition: all 0.3s ease;
-        }
-        .toast.show { transform: translateY(0); opacity: 1; }
-        .toast.error { background: var(--danger); }
-
-        /* ── No history ── */
-        .empty-state {
-            text-align: center; padding: 2rem;
-            color: var(--text-muted); font-size: 0.88rem;
-        }
-        .empty-state i { font-size: 2rem; margin-bottom: 0.8rem; display: block; opacity: 0.4; }
-
-        @media (max-width: 640px) {
-            .grid { grid-template-columns: 1fr; }
-            .profile-hero { flex-direction: column; text-align: center; }
-            .hero-stats { justify-content: center; }
-            .navbar { padding: 0 1rem; }
-            .nav-link { display: none; }
-        }
+      :root {
+        --bg-paper: #f6f5f0;
+        --surface-card: #ffffff;
+        --ink-black: #111213;
+        --ink-muted: #575752;
+        --ink-faint: #92928c;
+        --border-heavy: #111213;
+        --border-hairline: #dcd9d0;
+        --border-subtle: #e8e6df;
+        --clinical-red: #b91c1c;
+        --clinical-red-bg: #fef2f2;
+        --clinical-amber: #b45309;
+        --clinical-amber-bg: #fffbeb;
+        --clinical-spruce: #15803d;
+        --clinical-spruce-bg: #f0fdf4;
+        --font-serif: "Fraunces", Georgia, serif;
+        --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+      }
+      [data-theme="dark"] {
+        --bg-paper: #0e0f12;
+        --surface-card: #15171c;
+        --ink-black: #f4f3ee;
+        --ink-muted: #9c9b94;
+        --ink-faint: #4e5057;
+        --border-heavy: #f4f3ee;
+        --border-hairline: #2a2c34;
+        --border-subtle: #1c1e24;
+        --clinical-red: #ef4444;
+        --clinical-red-bg: rgba(239, 68, 68, 0.12);
+        --clinical-amber: #f59e0b;
+        --clinical-amber-bg: rgba(245, 158, 11, 0.12);
+        --clinical-spruce: #10b981;
+        --clinical-spruce-bg: rgba(16, 185, 129, 0.12);
+      }
+      * { box-sizing: border-box; margin: 0; padding: 0; border-radius: 0 !important; }
+      body {
+        background-color: var(--bg-paper);
+        color: var(--ink-black);
+        font-family: var(--font-mono);
+        font-size: 13px;
+        line-height: 1.5;
+        -webkit-font-smoothing: antialiased;
+        min-height: 100vh;
+        border-top: 4px solid var(--ink-black);
+      }
+      .navbar {
+        border-bottom: 2px solid var(--border-heavy);
+        background: var(--bg-paper);
+        padding: 1rem 2rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 1rem;
+      }
+      .brand-block { display: flex; align-items: baseline; gap: 1rem; }
+      .brand-logo-wrap { display: flex; align-items: center; gap: 10px; }
+      .brand-logo-img {
+        width: 34px !important; height: 34px !important;
+        border-radius: 6px !important; object-fit: cover !important;
+        border: 1.5px solid var(--border-heavy);
+        box-shadow: 1px 1px 0px var(--border-heavy);
+      }
+      .brand-title {
+        font-family: var(--font-serif);
+        font-size: 1.5rem; font-weight: 700;
+        letter-spacing: -0.03em; line-height: 1;
+        color: var(--ink-black);
+      }
+      .nav-actions { display: flex; align-items: center; gap: 1rem; }
+      .nav-link {
+        background: transparent; border: 2px solid var(--border-heavy);
+        padding: 0.5rem 1rem; font-family: var(--font-mono);
+        font-size: 0.7rem; font-weight: 700; letter-spacing: 0.06em;
+        text-transform: uppercase; cursor: pointer; color: var(--ink-black);
+        transition: all 0.1s ease; display: inline-flex; align-items: center; gap: 0.4rem;
+      }
+      .nav-link:hover { background: var(--ink-black); color: var(--bg-paper); }
+      .nav-link.active { background: var(--ink-black); color: var(--bg-paper); }
+      .theme-toggle-btn {
+        background: var(--surface-card); border: 2px solid var(--border-heavy);
+        color: var(--ink-black); padding: 0.5rem 0.9rem;
+        font-family: var(--font-mono); font-size: 0.7rem; font-weight: 700;
+        letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer;
+        box-shadow: 3px 3px 0px var(--border-heavy);
+        display: inline-flex; align-items: center; gap: 0.4rem; transition: all 0.1s ease;
+      }
+      .theme-toggle-btn:hover { transform: translate(-1px, -1px); box-shadow: 4px 4px 0px var(--border-heavy); }
+      .theme-toggle-btn:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0px var(--border-heavy); }
+      .logout-btn {
+        background: var(--clinical-red-bg); border: 2px solid var(--clinical-red);
+        color: var(--clinical-red); padding: 0.5rem 1rem;
+        font-family: var(--font-mono); font-size: 0.7rem; font-weight: 700;
+        letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer;
+        box-shadow: 3px 3px 0px var(--clinical-red);
+        display: inline-flex; align-items: center; gap: 0.4rem; transition: all 0.1s ease;
+      }
+      .logout-btn:hover { background: var(--clinical-red); color: var(--bg-paper); transform: translate(-1px, -1px); box-shadow: 4px 4px 0px var(--clinical-red); }
+      main.ledger-container { max-width: 900px; margin: 0 auto; padding: 2rem; }
+      .profile-hero {
+        background: var(--surface-card); border: 2px solid var(--border-heavy);
+        box-shadow: 4px 4px 0px var(--border-heavy); padding: 2rem;
+        display: flex; align-items: center; gap: 2rem; margin-bottom: 2rem;
+      }
+      .avatar {
+        width: 90px; height: 90px; border-radius: 50%;
+        background: var(--bg-paper); border: 2px solid var(--border-heavy);
+        display: flex; align-items: center; justify-content: center;
+        font-family: var(--font-serif); font-size: 2rem; font-weight: 700;
+        color: var(--ink-black); flex-shrink: 0; cursor: pointer;
+        transition: transform 0.1s ease; position: relative; overflow: hidden;
+      }
+      .avatar:hover { transform: scale(1.02); }
+      .avatar-upload-overlay {
+        position: absolute; inset: 0; background: rgba(17,18,19,0.5);
+        display: flex; align-items: center; justify-content: center;
+        opacity: 0; transition: opacity 0.1s; border-radius: 50%;
+      }
+      .avatar:hover .avatar-upload-overlay { opacity: 1; }
+      .avatar-upload-overlay i { color: var(--bg-paper); font-size: 1.5rem; }
+      .hero-info { flex: 1; }
+      .hero-info h1 { font-family: var(--font-serif); font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; color: var(--ink-black); margin-bottom: 0.25rem; }
+      .hero-info p { font-size: 0.75rem; color: var(--ink-muted); letter-spacing: 0.04em; text-transform: uppercase; }
+      .diabetes-badge {
+        display: inline-flex; align-items: center; gap: 0.5rem;
+        background: var(--bg-paper); border: 1px solid var(--border-hairline);
+        padding: 0.35rem 0.75rem; font-size: 0.65rem; font-weight: 700;
+        letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-muted);
+        margin-top: 1rem;
+      }
+      .hero-stats { display: flex; gap: 2rem; margin-top: 1.5rem; flex-wrap: wrap; }
+      .hero-stat { text-align: left; }
+      .hero-stat .val { font-family: var(--font-serif); font-size: 1.75rem; font-weight: 700; color: var(--ink-black); }
+      .hero-stat .lbl { font-size: 0.62rem; color: var(--ink-faint); text-transform: uppercase; letter-spacing: 0.1em; margin-top: 0.25rem; }
+      .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+      @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+      .card {
+        background: var(--surface-card); border: 2px solid var(--border-heavy);
+        box-shadow: 4px 4px 0px var(--border-heavy); padding: 1.5rem;
+      }
+      .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; }
+      .card-title { font-size: 0.65rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-muted); display: flex; align-items: center; gap: 0.4rem; }
+      .card-title i { color: var(--ink-black); }
+      .edit-btn {
+        background: var(--bg-paper); border: 1px solid var(--border-hairline);
+        padding: 0.35rem 0.75rem; font-family: var(--font-mono);
+        font-size: 0.65rem; font-weight: 700; text-transform: uppercase;
+        cursor: pointer; color: var(--ink-black); transition: all 0.1s ease;
+      }
+      .edit-btn:hover { border-color: var(--border-heavy); background: var(--surface-card); }
+      .form-group { margin-bottom: 1rem; }
+      label.field-label {
+        display: block; font-size: 0.62rem; font-weight: 700; letter-spacing: 0.08em;
+        text-transform: uppercase; color: var(--ink-muted); margin-bottom: 0.35rem;
+      }
+      .input-wrap { position: relative; }
+      .input-wrap i.icon { position: absolute; left: 0.75rem; top: 50%; transform: translateY(-50%); color: var(--ink-faint); font-size: 0.85rem; }
+      input[type="text"], input[type="email"], input[type="number"], select, textarea {
+        width: 100%; padding: 0.6rem 0.75rem 0.6rem 2.25rem;
+        border: 1.5px solid var(--border-heavy); background: var(--bg-paper);
+        font-family: var(--font-mono); font-size: 0.75rem; font-weight: 600; color: var(--ink-black);
+        outline: none; transition: all 0.1s ease;
+      }
+      textarea { padding-left: 0.75rem; resize: vertical; min-height: 80px; }
+      input:focus, select:focus, textarea:focus { border-color: var(--ink-black); box-shadow: 3px 3px 0px var(--ink-faint); }
+      input:disabled, select:disabled, textarea:disabled { opacity: 0.5; cursor: not-allowed; background: var(--surface-card); }
+      select { appearance: none; cursor: pointer; }
+      .range-row { display: flex; gap: 1rem; align-items: flex-end; }
+      .range-row .form-group { flex: 1; margin-bottom: 0; }
+      .range-label { font-size: 0.6rem; color: var(--ink-muted); text-align: center; margin-top: 0.25rem; }
+      input[type="range"] { flex: 1; accent-color: var(--ink-black); cursor: pointer; }
+      .toggle-row { display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 0; border-bottom: 1px solid var(--border-hairline); }
+      .toggle-row:last-child { border-bottom: none; }
+      .toggle-info .toggle-title { font-family: var(--font-mono); font-size: 0.75rem; font-weight: 700; color: var(--ink-black); }
+      .toggle-info .toggle-desc { font-size: 0.62rem; color: var(--ink-muted); margin-top: 0.15rem; letter-spacing: 0.04em; }
+      .switch { position: relative; width: 44px; height: 24px; flex-shrink: 0; }
+      .switch input { opacity: 0; width: 0; height: 0; }
+      .slider { position: absolute; inset: 0; cursor: pointer; background: var(--border-hairline); border: 1px solid var(--border-heavy); border-radius: 24px; transition: all 0.1s ease; }
+      .slider:before { content: ''; position: absolute; width: 18px; height: 18px; left: 2px; bottom: 2px; background: var(--ink-black); border-radius: 50%; transition: all 0.1s ease; box-shadow: 1px 1px 2px rgba(0,0,0,0.2); }
+      input:checked + .slider { background: var(--ink-black); border-color: var(--ink-black); }
+      input:checked + .slider:before { transform: translateX(20px); background: var(--bg-paper); }
+      .history-item { display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 1rem; background: var(--bg-paper); border: 1px solid var(--border-hairline); margin-bottom: 0.5rem; font-size: 0.7rem; transition: all 0.1s ease; }
+      .history-item:hover { border-color: var(--border-heavy); background: var(--surface-card); }
+      .history-left .date { font-weight: 700; color: var(--ink-black); }
+      .history-left .file { font-size: 0.62rem; color: var(--ink-muted); margin-top: 0.15rem; font-family: var(--font-mono); }
+      .history-right { display: flex; gap: 0.5rem; align-items: center; }
+      .hist-badge { padding: 0.2rem 0.5rem; font-size: 0.6rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; border: 1px solid var(--border-heavy); }
+      .hist-badge.stable { border-color: var(--clinical-spruce); background: var(--clinical-spruce-bg); color: var(--clinical-spruce); }
+      .hist-badge.high { border-color: var(--clinical-red); background: var(--clinical-red-bg); color: var(--clinical-red); }
+      .hist-badge.low { border-color: var(--clinical-amber); background: var(--clinical-amber-bg); color: var(--clinical-amber); }
+      .hist-del { background: none; border: 1px solid var(--border-hairline); color: var(--ink-muted); cursor: pointer; font-size: 0.7rem; padding: 0.2rem 0.4rem; font-family: var(--font-mono); transition: all 0.1s ease; }
+      .hist-del:hover { background: var(--clinical-red-bg); border-color: var(--clinical-red); color: var(--clinical-red); }
+      .btn-save {
+        width: 100%; background: var(--ink-black); color: var(--bg-paper);
+        border: 2px solid var(--border-heavy); padding: 0.75rem 1.25rem;
+        font-family: var(--font-mono); font-size: 0.75rem; font-weight: 700;
+        letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer;
+        box-shadow: 3px 3px 0px var(--ink-faint); display: flex; align-items: center; justify-content: center; gap: 0.5rem; transition: all 0.1s ease;
+      }
+      .btn-save:hover:not(:disabled) { transform: translate(-1px, -1px); box-shadow: 5px 5px 0px var(--border-heavy); }
+      .btn-save:active:not(:disabled) { transform: translate(2px, 2px); box-shadow: 1px 1px 0px var(--border-heavy); }
+      .btn-save:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+      .toast { position: fixed; bottom: 1.5rem; right: 1.5rem; background: var(--ink-black); color: var(--bg-paper); padding: 0.75rem 1.25rem; font-family: var(--font-mono); font-size: 0.7rem; font-weight: 700; display: flex; align-items: center; gap: 0.5rem; z-index: 9999; transform: translateY(80px); opacity: 0; transition: all 0.2s ease; border: 2px solid var(--border-heavy); box-shadow: 4px 4px 0px var(--border-heavy); }
+      .toast.show { transform: translateY(0); opacity: 1; }
+      .toast.error { background: var(--clinical-red); color: var(--bg-paper); border-color: var(--clinical-red); box-shadow: 4px 4px 0px var(--clinical-red); }
+      .empty-state { text-align: center; padding: 2rem; color: var(--ink-muted); font-size: 0.7rem; }
+      .empty-state i { font-size: 2rem; margin-bottom: 0.75rem; display: block; opacity: 0.4; }
+      .danger-zone { border-color: var(--clinical-red) !important; }
+      .danger-zone .card-title { color: var(--clinical-red) !important; }
+      .btn-danger {
+        background: var(--clinical-red); color: var(--bg-paper); border: 2px solid var(--clinical-red);
+        padding: 0.6rem 1.5rem; font-family: var(--font-mono); font-size: 0.7rem; font-weight: 700; text-transform: uppercase; cursor: pointer; box-shadow: 3px 3px 0px var(--clinical-red); transition: all 0.1s ease;
+      }
+      .btn-danger:hover { transform: translate(-1px, -1px); box-shadow: 5px 5px 0px var(--clinical-red); }
+      .btn-danger:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0px var(--clinical-red); }
+      :focus-visible { outline: 2px solid var(--clinical-spruce); outline-offset: 2px; }
+      button:focus-visible, .edit-btn:focus-visible, .nav-link:focus-visible, .theme-toggle-btn:focus-visible, .logout-btn:focus-visible, .btn-save:focus-visible, .hist-del:focus-visible, .btn-danger:focus-visible { outline: 2.5px solid var(--clinical-spruce); outline-offset: 3px; }
     </style>
-</head>
-<body>
-
-<!-- Navbar -->
-<nav class="navbar">
-    <a class="nav-brand" href="index.html" style="display:flex;align-items:center;gap:10px;">
-        <img src="./glucodex.jpeg" alt="GlucoDex Logo" style="width:34px;height:34px;border-radius:6px;object-fit:cover;">
-        GlucoDex
-    </a>
-    <div class="nav-actions">
+  </head>
+  <body>
+    <header class="masthead" style="border-bottom: 2px solid var(--border-heavy); background: var(--bg-paper); padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+      <div class="brand-block">
+        <div class="brand-logo-wrap">
+          <img src="./glucodex.jpeg" alt="GlucoDex Logo" class="brand-logo-img" />
+          <span class="brand-title">GlucoDex</span>
+        </div>
+      </div>
+      <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
         <a class="nav-link" href="index.html"><i class="fa-solid fa-house"></i> Home</a>
         <a class="nav-link active" href="profile.html"><i class="fa-solid fa-user"></i> Profile</a>
-        <button class="theme-btn" onclick="toggleTheme()" title="Toggle theme" id="themeBtn">
-            <i class="fa-solid fa-moon" id="themeIcon"></i>
+        <button class="theme-toggle-btn" onclick="toggleTheme()" title="Switch Light/Dark Mode" id="themeBtn">
+          <i class="fa-solid fa-moon" id="themeIcon"></i>
+          <span id="themeLabel">NIGHT LEDGER</span>
         </button>
-        <button class="logout-btn" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i> Logout</button>
-    </div>
-</nav>
-
-<div class="page">
-
-    <!-- Profile Hero -->
-    <div class="profile-hero">
+        <button class="logout-btn" onclick="logout()" title="Sign Out"><i class="fa-solid fa-right-from-bracket"></i> SIGN OUT</button>
+      </div>
+    </header>
+    <main class="ledger-container">
+      <div class="profile-hero">
         <div class="avatar" id="avatarEl" onclick="document.getElementById('avatarInput').click()">
-            <span id="avatarInitials">?</span>
-            <div class="avatar-upload-overlay"><i class="fa-solid fa-camera"></i></div>
+          <span id="avatarInitials">?</span>
+          <div class="avatar-upload-overlay"><i class="fa-solid fa-camera"></i></div>
         </div>
         <input type="file" id="avatarInput" accept="image/*" style="display:none" onchange="handleAvatarUpload(event)">
         <div class="hero-info">
-            <h1 id="heroName">Loading…</h1>
-            <p id="heroEmail">—</p>
-            <div class="diabetes-badge"><i class="fa-solid fa-notes-medical"></i> <span id="heroDiabetesType">—</span></div>
-            <div class="hero-stats">
-                <div class="hero-stat">
-                    <div class="val" id="statPredictions">0</div>
-                    <div class="lbl">Predictions</div>
-                </div>
-                <div class="hero-stat">
-                    <div class="val" id="statDays">—</div>
-                    <div class="lbl">Days Active</div>
-                </div>
-                <div class="hero-stat">
-                    <div class="val" id="statAvgGlucose">—</div>
-                    <div class="lbl">Avg Reading</div>
-                </div>
-            </div>
+          <h1 id="heroName">Loading…</h1>
+          <p id="heroEmail">—</p>
+          <div class="diabetes-badge"><i class="fa-solid fa-notes-medical"></i> <span id="heroDiabetesType">—</span></div>
+          <div class="hero-stats">
+            <div class="hero-stat"><div class="val" id="statPredictions">0</div><div class="lbl">Predictions</div></div>
+            <div class="hero-stat"><div class="val" id="statDays">—</div><div class="lbl">Days Active</div></div>
+            <div class="hero-stat"><div class="val" id="statAvgGlucose">—</div><div class="lbl">Avg Reading</div></div>
+          </div>
         </div>
-    </div>
-
-    <!-- Grid -->
-    <div class="grid">
-
-        <!-- Personal Info -->
+      </div>
+      <div class="grid">
         <div class="card">
-            <div class="card-header">
-                <div class="card-title"><i class="fa-solid fa-user"></i> Personal Info</div>
-                <button class="edit-btn" id="editPersonalBtn" onclick="toggleEdit('personal')">
-                    <i class="fa-solid fa-pen"></i> Edit
-                </button>
-            </div>
-            <div class="form-group">
-                <label class="field-label">Full Name</label>
-                <div class="input-wrap">
-                    <i class="icon fa-solid fa-user"></i>
-                    <input type="text" id="profileName" disabled>
-                </div>
-            </div>
-            <div class="form-group">
-                <label class="field-label">Email Address</label>
-                <div class="input-wrap">
-                    <i class="icon fa-solid fa-envelope"></i>
-                    <input type="email" id="profileEmail" disabled>
-                </div>
-            </div>
-            <div class="form-group">
-                <label class="field-label">Age</label>
-                <div class="input-wrap">
-                    <i class="icon fa-solid fa-calendar"></i>
-                    <input type="number" id="profileAge" placeholder="Enter your age" min="1" max="120" disabled>
-                </div>
-            </div>
-            <div class="form-group">
-                <label class="field-label">Bio / Notes</label>
-                <textarea id="profileBio" placeholder="Add notes about your condition, doctor info, etc…" disabled></textarea>
-            </div>
-            <div id="personalSaveRow" style="display:none; margin-top:0.5rem;">
-                <button class="btn-save" onclick="savePersonal()"><i class="fa-solid fa-floppy-disk"></i> Save Changes</button>
-            </div>
+          <div class="card-header">
+            <div class="card-title"><i class="fa-solid fa-user"></i> Personal Info</div>
+            <button class="edit-btn" id="editPersonalBtn" onclick="toggleEdit('personal')"><i class="fa-solid fa-pen"></i> Edit</button>
+          </div>
+          <div class="form-group"><label class="field-label">Full Name</label><div class="input-wrap"><i class="icon fa-solid fa-user"></i><input type="text" id="profileName" disabled></div></div>
+          <div class="form-group"><label class="field-label">Email Address</label><div class="input-wrap"><i class="icon fa-solid fa-envelope"></i><input type="email" id="profileEmail" disabled></div></div>
+          <div class="form-group"><label class="field-label">Age</label><div class="input-wrap"><i class="icon fa-solid fa-calendar"></i><input type="number" id="profileAge" placeholder="Enter your age" min="1" max="120" disabled></div></div>
+          <div class="form-group"><label class="field-label">Bio / Notes</label><textarea id="profileBio" placeholder="Add notes about your condition, doctor info, etc…" disabled></textarea></div>
+          <div id="personalSaveRow" style="display:none; margin-top:0.5rem;"><button class="btn-save" onclick="savePersonal()"><i class="fa-solid fa-floppy-disk"></i> Save Changes</button></div>
         </div>
-
-        <!-- Medical Settings -->
         <div class="card">
-            <div class="card-header">
-                <div class="card-title"><i class="fa-solid fa-heart-pulse"></i> Medical Settings</div>
-                <button class="edit-btn" id="editMedBtn" onclick="toggleEdit('medical')">
-                    <i class="fa-solid fa-pen"></i> Edit
-                </button>
-            </div>
-            <div class="form-group">
-                <label class="field-label">Diabetes Type</label>
-                <div class="input-wrap">
-                    <i class="icon fa-solid fa-notes-medical"></i>
-                    <select id="profileDiabetesType" disabled>
-                        <option value="type1">Type 1 Diabetes</option>
-                        <option value="type2">Type 2 Diabetes</option>
-                        <option value="prediabetes">Pre-Diabetes</option>
-                        <option value="gestational">Gestational Diabetes</option>
-                        <option value="other">Other / Research</option>
-                    </select>
-                </div>
-            </div>
-            <div class="form-group">
-                <label class="field-label">CGM Device</label>
-                <div class="input-wrap">
-                    <i class="icon fa-solid fa-microchip"></i>
-                    <select id="profileCGM" disabled>
-                        <option value="">Select CGM device…</option>
-                        <option value="dexcom-g7">Dexcom G7</option>
-                        <option value="dexcom-g6">Dexcom G6</option>
-                        <option value="libre3">FreeStyle Libre 3</option>
-                        <option value="libre2">FreeStyle Libre 2</option>
-                        <option value="medtronic">Medtronic Guardian</option>
-                        <option value="manual">Manual / Other</option>
-                    </select>
-                </div>
-            </div>
-            <div class="form-group">
-                <label class="field-label">Preferred Unit</label>
-                <div class="input-wrap">
-                    <i class="icon fa-solid fa-ruler"></i>
-                    <select id="profileUnit" disabled>
-                        <option value="mg/dL">mg/dL</option>
-                        <option value="mmol/L">mmol/L</option>
-                    </select>
-                </div>
-            </div>
-            <div style="margin-bottom:1rem;">
-                <label class="field-label">Target Glucose Range (mg/dL)</label>
-                <div class="range-row">
-                    <div class="form-group">
-                        <label class="field-label" style="color:var(--success)">Low Alert</label>
-                        <input type="number" id="profileLow" min="40" max="100" placeholder="70" disabled>
-                        <div class="range-label">Min: <b id="lowVal">70</b> mg/dL</div>
-                    </div>
-                    <div class="form-group">
-                        <label class="field-label" style="color:var(--danger)">High Alert</label>
-                        <input type="number" id="profileHigh" min="120" max="400" placeholder="180" disabled>
-                        <div class="range-label">Max: <b id="highVal">180</b> mg/dL</div>
-                    </div>
-                </div>
-            </div>
-            <div id="medSaveRow" style="display:none; margin-top:0.5rem;">
-                <button class="btn-save" onclick="saveMedical()"><i class="fa-solid fa-floppy-disk"></i> Save Changes</button>
-            </div>
+          <div class="card-header">
+            <div class="card-title"><i class="fa-solid fa-heart-pulse"></i> Medical Settings</div>
+            <button class="edit-btn" id="editMedBtn" onclick="toggleEdit('medical')"><i class="fa-solid fa-pen"></i> Edit</button>
+          </div>
+          <div class="form-group"><label class="field-label">Diabetes Type</label><div class="input-wrap"><i class="icon fa-solid fa-notes-medical"></i><select id="profileDiabetesType" disabled><option value="type1">Type 1 Diabetes</option><option value="type2">Type 2 Diabetes</option><option value="prediabetes">Pre-Diabetes</option><option value="gestational">Gestational Diabetes</option><option value="other">Other / Research</option></select></div></div>
+          <div class="form-group"><label class="field-label">CGM Device</label><div class="input-wrap"><i class="icon fa-solid fa-microchip"></i><select id="profileCGM" disabled><option value="">Select CGM device…</option><option value="dexcom-g7">Dexcom G7</option><option value="dexcom-g6">Dexcom G6</option><option value="libre3">FreeStyle Libre 3</option><option value="libre2">FreeStyle Libre 2</option><option value="medtronic">Medtronic Guardian</option><option value="manual">Manual / Other</option></select></div></div>
+          <div class="form-group"><label class="field-label">Preferred Unit</label><div class="input-wrap"><i class="icon fa-solid fa-ruler"></i><select id="profileUnit" disabled><option value="mg/dL">mg/dL</option><option value="mmol/L">mmol/L</option></select></div></div>
+          <div class="range-row" style="margin-bottom:1rem;">
+            <div class="form-group"><label class="field-label" style="color:var(--clinical-spruce)">Low Alert</label><input type="number" id="profileLow" min="40" max="100" placeholder="70" disabled><div class="range-label">Min: <b id="lowVal">70</b> mg/dL</div></div>
+            <div class="form-group"><label class="field-label" style="color:var(--clinical-red)">High Alert</label><input type="number" id="profileHigh" min="120" max="400" placeholder="180" disabled><div class="range-label">Max: <b id="highVal">180</b> mg/dL</div></div>
+          </div>
+          <div id="medSaveRow" style="display:none; margin-top:0.5rem;"><button class="btn-save" onclick="saveMedical()"><i class="fa-solid fa-floppy-disk"></i> Save Changes</button></div>
         </div>
-
-    </div><!-- /grid -->
-
-    <!-- Notifications + History row -->
-    <div class="grid" style="margin-top:1.2rem;">
-
-        <!-- Notification Settings -->
+      </div>
+      <div class="grid" style="margin-top:1.5rem;">
         <div class="card">
-            <div class="card-header">
-                <div class="card-title"><i class="fa-solid fa-bell"></i> Notifications</div>
-            </div>
-            <div class="toggle-row">
-                <div class="toggle-info">
-                    <div class="toggle-title">High Glucose Alert</div>
-                    <div class="toggle-desc">Alert when prediction exceeds your high threshold</div>
-                </div>
-                <label class="switch">
-                    <input type="checkbox" id="notifHigh" checked onchange="saveNotifSettings()">
-                    <span class="slider"></span>
-                </label>
-            </div>
-            <div class="toggle-row">
-                <div class="toggle-info">
-                    <div class="toggle-title">Low Glucose Alert</div>
-                    <div class="toggle-desc">Alert when prediction drops below your low threshold</div>
-                </div>
-                <label class="switch">
-                    <input type="checkbox" id="notifLow" checked onchange="saveNotifSettings()">
-                    <span class="slider"></span>
-                </label>
-            </div>
-            <div class="toggle-row">
-                <div class="toggle-info">
-                    <div class="toggle-title">Rapid Spike Warning</div>
-                    <div class="toggle-desc">Warn when glucose rises > 40 mg/dL rapidly</div>
-                </div>
-                <label class="switch">
-                    <input type="checkbox" id="notifSpike" checked onchange="saveNotifSettings()">
-                    <span class="slider"></span>
-                </label>
-            </div>
-            <div class="toggle-row">
-                <div class="toggle-info">
-                    <div class="toggle-title">Rapid Drop Warning</div>
-                    <div class="toggle-desc">Warn on sudden drops > 40 mg/dL</div>
-                </div>
-                <label class="switch">
-                    <input type="checkbox" id="notifDrop" checked onchange="saveNotifSettings()">
-                    <span class="slider"></span>
-                </label>
-            </div>
-            <div class="toggle-row">
-                <div class="toggle-info">
-                    <div class="toggle-title">Dark Mode Default</div>
-                    <div class="toggle-desc">Use dark theme by default when you open the app</div>
-                </div>
-                <label class="switch">
-                    <input type="checkbox" id="notifDark" onchange="handleDarkDefault(this)">
-                    <span class="slider"></span>
-                </label>
-            </div>
+          <div class="card-header"><div class="card-title"><i class="fa-solid fa-bell"></i> Notifications</div></div>
+          <div class="toggle-row"><div class="toggle-info"><div class="toggle-title">High Glucose Alert</div><div class="toggle-desc">Alert when prediction exceeds your high threshold</div></div><label class="switch"><input type="checkbox" id="notifHigh" checked onchange="saveNotifSettings()"><span class="slider"></span></label></div>
+          <div class="toggle-row"><div class="toggle-info"><div class="toggle-title">Low Glucose Alert</div><div class="toggle-desc">Alert when prediction drops below your low threshold</div></div><label class="switch"><input type="checkbox" id="notifLow" checked onchange="saveNotifSettings()"><span class="slider"></span></label></div>
+          <div class="toggle-row"><div class="toggle-info"><div class="toggle-title">Rapid Spike Warning</div><div class="toggle-desc">Warn when glucose rises > 40 mg/dL rapidly</div></div><label class="switch"><input type="checkbox" id="notifSpike" checked onchange="saveNotifSettings()"><span class="slider"></span></label></div>
+          <div class="toggle-row"><div class="toggle-info"><div class="toggle-title">Rapid Drop Warning</div><div class="toggle-desc">Warn on sudden drops > 40 mg/dL</div></div><label class="switch"><input type="checkbox" id="notifDrop" checked onchange="saveNotifSettings()"><span class="slider"></span></label></div>
+          <div class="toggle-row"><div class="toggle-info"><div class="toggle-title">Dark Mode Default</div><div class="toggle-desc">Use dark theme by default when you open the app</div></div><label class="switch"><input type="checkbox" id="notifDark" onchange="handleDarkDefault(this)"><span class="slider"></span></label></div>
         </div>
-
-        <!-- Prediction History -->
         <div class="card">
-            <div class="card-header">
-                <div class="card-title"><i class="fa-solid fa-clock-rotate-left"></i> Prediction History</div>
-                <button class="edit-btn" onclick="clearHistory()" style="color:var(--danger); background:var(--danger-bg);">
-                    <i class="fa-solid fa-trash"></i> Clear All
-                </button>
-            </div>
-            <div id="historyList"></div>
+          <div class="card-header"><div class="card-title"><i class="fa-solid fa-clock-rotate-left"></i> Prediction History</div><button class="edit-btn" onclick="clearHistory()" style="color:var(--clinical-red); background:var(--clinical-red-bg); border-color:var(--clinical-red);"><i class="fa-solid fa-trash"></i> Clear All</button></div>
+          <div id="historyList"></div>
         </div>
-
-    </div><!-- /grid2 -->
-
-    <!-- Danger Zone -->
-    <div class="card" style="margin-top:1.2rem; border-color:#fecaca;">
-        <div class="card-header">
-            <div class="card-title" style="color:var(--danger);"><i class="fa-solid fa-triangle-exclamation"></i> Danger Zone</div>
-        </div>
+      </div>
+      <div class="card danger-zone" style="margin-top:1.5rem;">
+        <div class="card-header"><div class="card-title"><i class="fa-solid fa-triangle-exclamation"></i> Danger Zone</div></div>
         <div style="display:flex; gap:1rem; flex-wrap:wrap; align-items:center; justify-content:space-between;">
-            <div>
-                <div style="font-weight:600; font-size:0.92rem;">Delete My Account</div>
-                <div style="font-size:0.8rem; color:var(--text-muted); margin-top:2px;">This will permanently delete all your data. This cannot be undone.</div>
-            </div>
-            <button onclick="deleteAccount()" style="padding:8px 18px; background:var(--danger); color:white; border:none; border-radius:10px; font-weight:700; cursor:pointer; font-size:0.88rem; font-family:inherit;">
-                <i class="fa-solid fa-user-xmark"></i> Delete Account
-            </button>
+          <div><div style="font-weight:700; font-size:0.85rem;">Delete My Account</div><div style="font-size:0.65rem; color:var(--ink-muted); margin-top:0.25rem;">This will permanently delete all your data. This cannot be undone.</div></div>
+          <button class="btn-danger" onclick="deleteAccount()"><i class="fa-solid fa-user-xmark"></i> Delete Account</button>
         </div>
-    </div>
-
-</div><!-- /page -->
-
-<!-- Toast -->
-<div class="toast" id="toast">
-    <i class="fa-solid fa-circle-check"></i>
-    <span id="toastMsg">Saved successfully!</span>
-</div>
-
-<script>
-    // ── Config ──────────────────────────────────────────────────────
-    const BACKEND_URL =
-        window.location.hostname === "localhost" ||
-        window.location.hostname === "127.0.0.1" ||
-        window.location.protocol === "file:"
-            ? "http://127.0.0.1:8000"
-            : "https://nutra-type-1-diabetes.onrender.com";
-
-    // ── Theme ──────────────────────────────────────────────────────
-    function toggleTheme() {
-        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-        document.documentElement.setAttribute('data-theme', isDark ? 'light' : 'dark');
-        document.getElementById('themeIcon').className = isDark ? 'fa-solid fa-moon' : 'fa-solid fa-sun';
-        localStorage.setItem('glucoTheme', isDark ? 'light' : 'dark');
-    }
-    const savedTheme = localStorage.getItem('glucoTheme') || 'light';
-    document.documentElement.setAttribute('data-theme', savedTheme);
-    document.getElementById('themeIcon').className = savedTheme === 'dark' ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
-
-    // ── Session ────────────────────────────────────────────────────
-    const session = JSON.parse(localStorage.getItem('glucoSession') || sessionStorage.getItem('glucoSession') || 'null');
-    if (!session || !session.loggedIn) window.location.href = 'login.html';
-    const isLoggedIn = session && session.loggedIn;
-
-    function getAuthHeaders() {
-        return {
-            "X-User-Id": isLoggedIn ? (session.id || session.clerk_user_id || "") : "guest_demo_user",
-            "X-User-Email": isLoggedIn ? (session.email || "") : "guest@demo.local",
-            "X-User-Name": isLoggedIn ? (session.name || "") : "Guest User",
-            "Content-Type": "application/json",
-        };
-    }
-
-    async function apiGet(endpoint) {
-        const res = await fetch(BACKEND_URL + endpoint, {
-            method: "GET",
-            headers: getAuthHeaders(),
-        });
-        if (!res.ok) {
-            const err = await res.json().catch(() => ({ detail: res.statusText }));
-            throw new Error(err.detail || "Request failed");
-        }
-        return res.json();
-    }
-
-    async function apiPost(endpoint, data) {
-        const res = await fetch(BACKEND_URL + endpoint, {
-            method: "POST",
-            headers: getAuthHeaders(),
-            body: JSON.stringify(data),
-        });
-        if (!res.ok) {
-            const err = await res.json().catch(() => ({ detail: res.statusText }));
-            throw new Error(err.detail || "Request failed");
-        }
-        return res.json();
-    }
-
-    function logout() {
-        if (!confirm('Are you sure you want to log out?')) return;
-        localStorage.removeItem('glucoSession');
-        sessionStorage.removeItem('glucoSession');
-        window.location.href = 'login.html';
-    }
-
-    // ── Load Profile ───────────────────────────────────────────────
-    async function loadProfile() {
-        if (!session) return;
-
-        // Fetch from backend API
-        try {
-            const userId = session.id || session.clerk_user_id || session.email;
-            const profile = await apiGet("/api/profile/" + encodeURIComponent(userId));
-            
-            // Hero
-            document.getElementById('heroName').innerText  = profile.full_name || session.name || 'User';
-            document.getElementById('heroEmail').innerText = profile.email || session.email || '';
-            const typeMap = { type1:'Type 1 Diabetes', type2:'Type 2 Diabetes', prediabetes:'Pre-Diabetes', gestational:'Gestational', other:'Other/Research' };
-            document.getElementById('heroDiabetesType').innerText = typeMap[profile.diabetes_type] || 'Unknown';
-
-            // Initials
-            const parts = (profile.full_name || session.name || '?').split(' ');
-            document.getElementById('avatarInitials').innerText = (parts[0][0] + (parts[1]?.[0] || '')).toUpperCase();
-
-            // Form fields
-            document.getElementById('profileName').value  = profile.full_name || '';
-            document.getElementById('profileEmail').value = profile.email || '';
-            document.getElementById('profileAge').value   = profile.age || '';
-            document.getElementById('profileBio').value   = profile.bio || '';
-            document.getElementById('profileDiabetesType').value = profile.diabetes_type || 'type1';
-            document.getElementById('profileCGM').value   = profile.cgm_device || '';
-            document.getElementById('profileUnit').value  = profile.preferred_unit || 'mg/dL';
-            document.getElementById('profileLow').value   = profile.target_glucose_low ?? 70;
-            document.getElementById('profileHigh').value  = profile.target_glucose_high ?? 180;
-            document.getElementById('lowVal').innerText   = profile.target_glucose_low ?? 70;
-            document.getElementById('highVal').innerText  = profile.target_glucose_high ?? 180;
-
-            // Cache locally for offline
-            const prefs = {
-                name: profile.full_name,
-                age: profile.age,
-                bio: profile.bio,
-                diabetesType: profile.diabetes_type,
-                cgm: profile.cgm_device,
-                unit: profile.preferred_unit,
-                low: profile.target_glucose_low,
-                high: profile.target_glucose_high,
-            };
-            localStorage.setItem('glucoPrefs_' + session.email, JSON.stringify(prefs));
-        } catch (e) {
-            console.warn("Failed to fetch profile from API, using local cache:", e);
-            // Fallback to localStorage
-            const prefs = JSON.parse(localStorage.getItem('glucoPrefs_' + session.email) || '{}');
-            document.getElementById('heroName').innerText  = session.name || 'User';
-            document.getElementById('heroEmail').innerText = session.email || '';
-            const typeMap = { type1:'Type 1 Diabetes', type2:'Type 2 Diabetes', prediabetes:'Pre-Diabetes', gestational:'Gestational', other:'Other/Research' };
-            document.getElementById('heroDiabetesType').innerText = typeMap[session.diabetesType] || 'Unknown';
-            const parts = (session.name || '?').split(' ');
-            document.getElementById('avatarInitials').innerText = (parts[0][0] + (parts[1]?.[0] || '')).toUpperCase();
-            document.getElementById('profileName').value  = prefs.name  || session.name || '';
-            document.getElementById('profileEmail').value = session.email || '';
-            document.getElementById('profileAge').value   = prefs.age || '';
-            document.getElementById('profileBio').value   = prefs.bio || '';
-            document.getElementById('profileDiabetesType').value = prefs.diabetesType || session.diabetesType || 'type1';
-            document.getElementById('profileCGM').value   = prefs.cgm || '';
-            document.getElementById('profileUnit').value  = prefs.unit || 'mg/dL';
-            document.getElementById('profileLow').value   = prefs.low || 70;
-            document.getElementById('profileHigh').value  = prefs.high || 180;
-            document.getElementById('lowVal').innerText   = prefs.low || 70;
-            document.getElementById('highVal').innerText  = prefs.high || 180;
-        }
-
-        // Avatar
-        const savedAvatar = localStorage.getItem('glucoAvatar_' + session.email);
-        if (savedAvatar) {
-            document.getElementById('avatarEl').style.background = 'none';
-            document.getElementById('avatarInitials').style.display = 'none';
-            const img = document.createElement('img');
-            img.src = savedAvatar; img.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:50%;';
-            document.getElementById('avatarEl').insertBefore(img, document.getElementById('avatarEl').firstChild);
-        }
-
-        // Notif - fetch from API
-        try {
-            const userId = session.id || session.clerk_user_id || session.email;
-            const prefs = await apiGet("/api/preferences/" + encodeURIComponent(userId));
-            document.getElementById('notifHigh').checked  = prefs.notify_high_glucose !== false;
-            document.getElementById('notifLow').checked   = prefs.notify_low_glucose !== false;
-            document.getElementById('notifSpike').checked = prefs.notify_spike !== false;
-            document.getElementById('notifDrop').checked  = prefs.notify_drop !== false;
-            document.getElementById('notifDark').checked  = prefs.dark_mode_default !== false;
-        } catch (e) {
-            console.warn("Failed to fetch preferences from API, using local cache:", e);
-            const notif = JSON.parse(localStorage.getItem('glucoNotif_' + session.email) || '{}');
-            document.getElementById('notifHigh').checked  = notif.high  !== false;
-            document.getElementById('notifLow').checked   = notif.low   !== false;
-            document.getElementById('notifSpike').checked = notif.spike !== false;
-            document.getElementById('notifDrop').checked  = notif.drop  !== false;
-            document.getElementById('notifDark').checked  = savedTheme === 'dark';
-        }
-
-        // Stats
-        const history = JSON.parse(localStorage.getItem('glucoHistory_' + session.email) || '[]');
-        document.getElementById('statPredictions').innerText = history.length;
-
-        const users  = JSON.parse(localStorage.getItem('glucoUsers') || '[]');
-        const user   = users.find(u => u.email === session.email);
-        if (user && user.createdAt) {
-            const days = Math.max(1, Math.floor((Date.now() - new Date(user.createdAt)) / 86400000));
-            document.getElementById('statDays').innerText = days;
-        } else {
-            document.getElementById('statDays').innerText = '1';
-        }
-
-        const prefs = JSON.parse(localStorage.getItem('glucoPrefs_' + session.email) || '{}');
-        const avgGlucose = prefs.avgGlucose || '—';
-        document.getElementById('statAvgGlucose').innerText = avgGlucose === '—' ? '—' : avgGlucose + ' mg/dL';
-
-        // History list
-        renderHistory(history);
-    }
-
-    // ── Render History ─────────────────────────────────────────────
-    function renderHistory(history) {
-        const el = document.getElementById('historyList');
-        if (!history.length) {
-            el.innerHTML = `<div class="empty-state"><i class="fa-solid fa-chart-line"></i>No predictions yet.<br>Upload a CSV on the home page to get started.</div>`;
-            return;
-        }
-        el.innerHTML = history.slice().reverse().map((item, idx) => `
-            <div class="history-item">
-                <div class="history-left">
-                    <div class="date">${item.date}</div>
-                    <div class="file"><i class="fa-solid fa-file-csv" style="margin-right:4px;"></i>${item.file || 'Unknown file'}</div>
-                </div>
-                <div class="history-right">
-                    <span class="hist-badge ${item.status || 'stable'}">${capitalize(item.status || 'Stable')}</span>
-                    <button class="hist-del" onclick="deleteHistItem(${history.length - 1 - idx})" title="Delete"><i class="fa-solid fa-xmark"></i></button>
-                </div>
-            </div>
-        `).join('');
-    }
-    function capitalize(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
-
-    function deleteHistItem(idx) {
-        const history = JSON.parse(localStorage.getItem('glucoHistory_' + session.email) || '[]');
-        history.splice(idx, 1);
-        localStorage.setItem('glucoHistory_' + session.email, JSON.stringify(history));
-        document.getElementById('statPredictions').innerText = history.length;
-        renderHistory(history);
-        showToast('Entry removed.');
-    }
-
-    function clearHistory() {
-        if (!confirm('Clear all prediction history?')) return;
-        localStorage.removeItem('glucoHistory_' + session.email);
-        document.getElementById('statPredictions').innerText = 0;
-        renderHistory([]);
-        showToast('History cleared.');
-    }
-
-    // ── Edit Toggles ───────────────────────────────────────────────
-    function toggleEdit(section) {
-        const ids = section === 'personal'
-            ? ['profileName','profileAge','profileBio']
-            : ['profileDiabetesType','profileCGM','profileUnit','profileLow','profileHigh'];
-        const saveRowId = section === 'personal' ? 'personalSaveRow' : 'medSaveRow';
-        const btnId     = section === 'personal' ? 'editPersonalBtn' : 'editMedBtn';
-
-        const isDisabled = document.getElementById(ids[0]).disabled;
-        ids.forEach(id => document.getElementById(id).disabled = !isDisabled);
-        document.getElementById(saveRowId).style.display = isDisabled ? 'block' : 'none';
-        document.getElementById(btnId).innerHTML = isDisabled
-            ? '<i class="fa-solid fa-xmark"></i> Cancel'
-            : '<i class="fa-solid fa-pen"></i> Edit';
-    }
-
-    async function savePersonal() {
-        const prefs = JSON.parse(localStorage.getItem('glucoPrefs_' + session.email) || '{}');
-        prefs.name = document.getElementById('profileName').value;
-        prefs.age  = document.getElementById('profileAge').value;
-        prefs.bio  = document.getElementById('profileBio').value;
-        localStorage.setItem('glucoPrefs_' + session.email, JSON.stringify(prefs));
-        session.name = prefs.name;
-        sessionStorage.setItem('glucoSession', JSON.stringify(session));
-        document.getElementById('heroName').innerText = prefs.name;
-
-        try {
-            await apiPost("/api/profile", {
-                full_name: prefs.name,
-                age: prefs.age ? parseInt(prefs.age) : null,
-                bio: prefs.bio,
-            });
-        } catch (e) {
-            console.warn("Failed to save personal info to API:", e);
-            showToast("Saved locally (offline)", "error");
-            return;
-        }
-
-        toggleEdit('personal');
-        showToast('Personal info saved!');
-    }
-
-    async function saveMedical() {
-        const prefs = JSON.parse(localStorage.getItem('glucoPrefs_' + session.email) || '{}');
-        prefs.diabetesType = document.getElementById('profileDiabetesType').value;
-        prefs.cgm   = document.getElementById('profileCGM').value;
-        prefs.unit  = document.getElementById('profileUnit').value;
-        prefs.low   = document.getElementById('profileLow').value;
-        prefs.high  = document.getElementById('profileHigh').value;
-        localStorage.setItem('glucoPrefs_' + session.email, JSON.stringify(prefs));
-        document.getElementById('lowVal').innerText  = prefs.low;
-        document.getElementById('highVal').innerText = prefs.high;
-
-        try {
-            await apiPost("/api/profile", {
-                diabetes_type: prefs.diabetesType,
-                cgm_device: prefs.cgm,
-                preferred_unit: prefs.unit,
-                target_glucose_low: prefs.low ? parseInt(prefs.low) : 70,
-                target_glucose_high: prefs.high ? parseInt(prefs.high) : 180,
-            });
-        } catch (e) {
-            console.warn("Failed to save medical settings to API:", e);
-            showToast("Saved locally (offline)", "error");
-            return;
-        }
-
-        toggleEdit('medical');
-        showToast('Medical settings saved!');
-    }
-
-    async function saveNotifSettings() {
-        const notif = {
-            high:  document.getElementById('notifHigh').checked,
-            low:   document.getElementById('notifLow').checked,
-            spike: document.getElementById('notifSpike').checked,
-            drop:  document.getElementById('notifDrop').checked,
-        };
-        localStorage.setItem('glucoNotif_' + session.email, JSON.stringify(notif));
-
-        try {
-            await apiPost("/api/preferences", {
-                notify_high_glucose: notif.high,
-                notify_low_glucose: notif.low,
-                notify_spike: notif.spike,
-                notify_drop: notif.drop,
-                dark_mode_default: document.getElementById('notifDark').checked,
-            });
-        } catch (e) {
-            console.warn("Failed to save preferences to API:", e);
-        }
-    }
-
-    async function handleDarkDefault(cb) {
-        const theme = cb.checked ? 'dark' : 'light';
-        document.documentElement.setAttribute('data-theme', theme);
-        document.getElementById('themeIcon').className = theme === 'dark' ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
-        localStorage.setItem('glucoTheme', theme);
-
-        try {
-            await apiPost("/api/preferences", {
-                dark_mode_default: cb.checked,
-            });
-        } catch (e) {
-            console.warn("Failed to save dark mode preference to API:", e);
-        }
-    }
-
-    // ── Avatar Upload ──────────────────────────────────────────────
-    function handleAvatarUpload(e) {
-        const file = e.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = (ev) => {
-            const data = ev.target.result;
-            localStorage.setItem('glucoAvatar_' + session.email, data);
-            const avatarEl = document.getElementById('avatarEl');
-            let img = avatarEl.querySelector('img');
-            if (!img) {
-                img = document.createElement('img');
-                img.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:50%;position:absolute;top:0;left:0;';
-                avatarEl.insertBefore(img, avatarEl.firstChild);
-                document.getElementById('avatarInitials').style.display = 'none';
-            }
-            img.src = data;
-            showToast('Profile photo updated!');
-        };
-        reader.readAsDataURL(file);
-    }
-
-    // ── Delete Account ─────────────────────────────────────────────
-    function deleteAccount() {
-        if (!confirm('Are you absolutely sure? All your data will be permanently deleted.')) return;
-        if (prompt('Type DELETE to confirm:') !== 'DELETE') { showToast('Cancelled.', 'error'); return; }
-        const users = JSON.parse(localStorage.getItem('glucoUsers') || '[]');
-        const filtered = users.filter(u => u.email !== session.email);
-        localStorage.setItem('glucoUsers', JSON.stringify(filtered));
-        localStorage.removeItem('glucoSession');
-        localStorage.removeItem('glucoPrefs_' + session.email);
-        localStorage.removeItem('glucoHistory_' + session.email);
-        localStorage.removeItem('glucoNotif_' + session.email);
-        localStorage.removeItem('glucoAvatar_' + session.email);
-        sessionStorage.clear();
-        window.location.href = 'login.html';
-    }
-
-    // ── Toast ──────────────────────────────────────────────────────
-    function showToast(msg, type = 'success') {
-        const t = document.getElementById('toast');
-        document.getElementById('toastMsg').innerText = msg;
-        t.className = 'toast show' + (type === 'error' ? ' error' : '');
-        setTimeout(() => t.className = 'toast', 2800);
-    }
-
-    loadProfile();
-</script>
-</body>
+      </div>
+    </main>
+    <div class="toast" id="toast"><i class="fa-solid fa-circle-check"></i><span id="toastMsg">Saved successfully!</span></div>
+    <script>
+      const BACKEND_URL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" || window.location.protocol === "file:" ? "http://127.0.0.1:8000" : "https://nutra-type-1-diabetes.onrender.com";
+      function toggleTheme() { const isDark = document.documentElement.getAttribute('data-theme') === 'dark'; document.documentElement.setAttribute('data-theme', isDark ? 'light' : 'dark'); document.getElementById('themeIcon').className = isDark ? 'fa-solid fa-moon' : 'fa-solid fa-sun'; document.getElementById('themeLabel').innerText = isDark ? 'NIGHT LEDGER' : 'DAY LEDGER'; localStorage.setItem('glucoTheme', isDark ? 'light' : 'dark'); }
+      const savedTheme = localStorage.getItem('glucoTheme') || 'light'; document.documentElement.setAttribute('data-theme', savedTheme); document.getElementById('themeIcon').className = savedTheme === 'dark' ? 'fa-solid fa-sun' : 'fa-solid fa-moon'; document.getElementById('themeLabel').innerText = savedTheme === 'dark' ? 'DAY LEDGER' : 'NIGHT LEDGER';
+      const session = JSON.parse(localStorage.getItem('glucoSession') || sessionStorage.getItem('glucoSession') || 'null'); if (!session || !session.loggedIn) window.location.href = 'login.html';
+      function getAuthHeaders() { return { "X-User-Id": session.id || session.clerk_user_id || "", "X-User-Email": session.email || "", "X-User-Name": session.name || "", "Content-Type": "application/json" }; }
+      async function apiGet(endpoint) { const res = await fetch(BACKEND_URL + endpoint, { method: "GET", headers: getAuthHeaders() }); if (!res.ok) { const err = await res.json().catch(() => ({ detail: res.statusText })); throw new Error(err.detail || "Request failed"); } return res.json(); }
+      async function apiPost(endpoint, data) { const res = await fetch(BACKEND_URL + endpoint, { method: "POST", headers: getAuthHeaders(), body: JSON.stringify(data) }); if (!res.ok) { const err = await res.json().catch(() => ({ detail: res.statusText })); throw new Error(err.detail || "Request failed"); } return res.json(); }
+      function logout() { if (!confirm('Are you sure you want to log out?')) return; localStorage.removeItem('glucoSession'); sessionStorage.removeItem('glucoSession'); window.location.href = 'login.html'; }
+      async function loadProfile() { if (!session) return; try { const userId = session.id || session.clerk_user_id || session.email; const profile = await apiGet("/api/profile/" + encodeURIComponent(userId)); document.getElementById('heroName').innerText = profile.full_name || session.name || 'User'; document.getElementById('heroEmail').innerText = profile.email || session.email || ''; const typeMap = { type1:'Type 1 Diabetes', type2:'Type 2 Diabetes', prediabetes:'Pre-Diabetes', gestational:'Gestational', other:'Other/Research' }; document.getElementById('heroDiabetesType').innerText = typeMap[profile.diabetes_type] || 'Unknown'; const parts = (profile.full_name || session.name || '?').split(' '); document.getElementById('avatarInitials').innerText = (parts[0][0] + (parts[1]?.[0] || '')).toUpperCase(); document.getElementById('profileName').value = profile.full_name || ''; document.getElementById('profileEmail').value = profile.email || ''; document.getElementById('profileAge').value = profile.age || ''; document.getElementById('profileBio').value = profile.bio || ''; document.getElementById('profileDiabetesType').value = profile.diabetes_type || 'type1'; document.getElementById('profileCGM').value = profile.cgm_device || ''; document.getElementById('profileUnit').value = profile.preferred_unit || 'mg/dL'; document.getElementById('profileLow').value = profile.target_glucose_low ?? 70; document.getElementById('profileHigh').value = profile.target_glucose_high ?? 180; document.getElementById('lowVal').innerText = profile.target_glucose_low ?? 70; document.getElementById('highVal').innerText = profile.target_glucose_high ?? 180; const prefs = { name: profile.full_name, age: profile.age, bio: profile.bio, diabetesType: profile.diabetes_type, cgm: profile.cgm_device, unit: profile.preferred_unit, low: profile.target_glucose_low, high: profile.target_glucose_high }; localStorage.setItem('glucoPrefs_' + session.email, JSON.stringify(prefs)); } catch (e) { console.warn("Failed to fetch profile from API, using local cache:", e); const prefs = JSON.parse(localStorage.getItem('glucoPrefs_' + session.email) || '{}'); document.getElementById('heroName').innerText = session.name || 'User'; document.getElementById('heroEmail').innerText = session.email || ''; const typeMap = { type1:'Type 1 Diabetes', type2:'Type 2 Diabetes', prediabetes:'Pre-Diabetes', gestational:'Gestational', other:'Other/Research' }; document.getElementById('heroDiabetesType').innerText = typeMap[session.diabetesType] || 'Unknown'; const parts = (session.name || '?').split(' '); document.getElementById('avatarInitials').innerText = (parts[0][0] + (parts[1]?.[0] || '')).toUpperCase(); document.getElementById('profileName').value = prefs.name || session.name || ''; document.getElementById('profileEmail').value = session.email || ''; document.getElementById('profileAge').value = prefs.age || ''; document.getElementById('profileBio').value = prefs.bio || ''; document.getElementById('profileDiabetesType').value = prefs.diabetesType || session.diabetesType || 'type1'; document.getElementById('profileCGM').value = prefs.cgm || ''; document.getElementById('profileUnit').value = prefs.unit || 'mg/dL'; document.getElementById('profileLow').value = prefs.low || 70; document.getElementById('profileHigh').value = prefs.high || 180; document.getElementById('lowVal').innerText = prefs.low || 70; document.getElementById('highVal').innerText = prefs.high || 180; } const savedAvatar = localStorage.getItem('glucoAvatar_' + session.email); if (savedAvatar) { document.getElementById('avatarEl').style.background = 'none'; document.getElementById('avatarInitials').style.display = 'none'; const img = document.createElement('img'); img.src = savedAvatar; img.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:50%;'; document.getElementById('avatarEl').insertBefore(img, document.getElementById('avatarEl').firstChild); } try { const prefs = await apiGet("/api/preferences/" + encodeURIComponent(session.id || session.clerk_user_id || session.email)); document.getElementById('notifHigh').checked = prefs.notify_high_glucose !== false; document.getElementById('notifLow').checked = prefs.notify_low_glucose !== false; document.getElementById('notifSpike').checked = prefs.notify_spike !== false; document.getElementById('notifDrop').checked = prefs.notify_drop !== false; document.getElementById('notifDark').checked = prefs.dark_mode_default !== false; } catch (e) { console.warn("Failed to fetch preferences from API, using local cache:", e); const notif = JSON.parse(localStorage.getItem('glucoNotif_' + session.email) || '{}'); document.getElementById('notifHigh').checked = notif.high !== false; document.getElementById('notifLow').checked = notif.low !== false; document.getElementById('notifSpike').checked = notif.spike !== false; document.getElementById('notifDrop').checked = notif.drop !== false; document.getElementById('notifDark').checked = savedTheme === 'dark'; } const history = JSON.parse(localStorage.getItem('glucoHistory_' + session.email) || '[]'); document.getElementById('statPredictions').innerText = history.length; const users = JSON.parse(localStorage.getItem('glucoUsers') || '[]'); const user = users.find(u => u.email === session.email); if (user && user.createdAt) { const days = Math.max(1, Math.floor((Date.now() - new Date(user.createdAt)) / 86400000)); document.getElementById('statDays').innerText = days; } else { document.getElementById('statDays').innerText = '1'; } const prefs = JSON.parse(localStorage.getItem('glucoPrefs_' + session.email) || '{}'); const avgGlucose = prefs.avgGlucose || '—'; document.getElementById('statAvgGlucose').innerText = avgGlucose === '—' ? '—' : avgGlucose + ' mg/dL'; renderHistory(history); }
+      function renderHistory(history) { const el = document.getElementById('historyList'); if (!history.length) { el.innerHTML = '<div class="empty-state"><i class="fa-solid fa-chart-line"></i>No predictions yet.<br>Upload a CSV on the home page to get started.</div>'; return; } el.innerHTML = history.slice().reverse().map((item, idx) => '<div class="history-item"><div class="history-left"><div class="date">' + item.date + '</div><div class="file"><i class="fa-solid fa-file-csv" style="margin-right:4px;"></i>' + (item.file || 'Unknown file') + '</div></div><div class="history-right"><span class="hist-badge ' + (item.status || 'stable') + '">' + (item.status || 'Stable').charAt(0).toUpperCase() + (item.status || 'Stable').slice(1) + '</span><button class="hist-del" onclick="deleteHistItem(' + (history.length - 1 - idx) + ')" title="Delete"><i class="fa-solid fa-xmark"></i></button></div></div>').join(''); }
+      function deleteHistItem(idx) { const history = JSON.parse(localStorage.getItem('glucoHistory_' + session.email) || '[]'); history.splice(idx, 1); localStorage.setItem('glucoHistory_' + session.email, JSON.stringify(history)); document.getElementById('statPredictions').innerText = history.length; renderHistory(history); showToast('Entry removed.'); }
+      function clearHistory() { if (!confirm('Clear all prediction history?')) return; localStorage.removeItem('glucoHistory_' + session.email); document.getElementById('statPredictions').innerText = 0; renderHistory([]); showToast('History cleared.'); }
+      function toggleEdit(section) { const ids = section === 'personal' ? ['profileName','profileAge','profileBio'] : ['profileDiabetesType','profileCGM','profileUnit','profileLow','profileHigh']; const saveRowId = section === 'personal' ? 'personalSaveRow' : 'medSaveRow'; const btnId = section === 'personal' ? 'editPersonalBtn' : 'editMedBtn'; const isDisabled = document.getElementById(ids[0]).disabled; ids.forEach(id => document.getElementById(id).disabled = !isDisabled); document.getElementById(saveRowId).style.display = isDisabled ? 'block' : 'none'; document.getElementById(btnId).innerHTML = isDisabled ? '<i class="fa-solid fa-xmark"></i> Cancel' : '<i class="fa-solid fa-pen"></i> Edit'; }
+      async function savePersonal() { const prefs = JSON.parse(localStorage.getItem('glucoPrefs_' + session.email) || '{}'); prefs.name = document.getElementById('profileName').value; prefs.age = document.getElementById('profileAge').value; prefs.bio = document.getElementById('profileBio').value; localStorage.setItem('glucoPrefs_' + session.email, JSON.stringify(prefs)); session.name = prefs.name; sessionStorage.setItem('glucoSession', JSON.stringify(session)); document.getElementById('heroName').innerText = prefs.name; try { await apiPost("/api/profile", { full_name: prefs.name, age: prefs.age ? parseInt(prefs.age) : null, bio: prefs.bio }); } catch (e) { console.warn("Failed to save personal info to API:", e); showToast("Saved locally (offline)", "error"); return; } toggleEdit('personal'); showToast('Personal info saved!'); }
+      async function saveMedical() { const prefs = JSON.parse(localStorage.getItem('glucoPrefs_' + session.email) || '{}'); prefs.diabetesType = document.getElementById('profileDiabetesType').value; prefs.cgm = document.getElementById('profileCGM').value; prefs.unit = document.getElementById('profileUnit').value; prefs.low = document.getElementById('profileLow').value; prefs.high = document.getElementById('profileHigh').value; localStorage.setItem('glucoPrefs_' + session.email, JSON.stringify(prefs)); document.getElementById('lowVal').innerText = prefs.low; document.getElementById('highVal').innerText = prefs.high; try { await apiPost("/api/profile", { diabetes_type: prefs.diabetesType, cgm_device: prefs.cgm, preferred_unit: prefs.unit, target_glucose_low: prefs.low ? parseInt(prefs.low) : 70, target_glucose_high: prefs.high ? parseInt(prefs.high) : 180 }); } catch (e) { console.warn("Failed to save medical settings to API:", e); showToast("Saved locally (offline)", "error"); return; } toggleEdit('medical'); showToast('Medical settings saved!'); }
+      async function saveNotifSettings() { const notif = { high: document.getElementById('notifHigh').checked, low: document.getElementById('notifLow').checked, spike: document.getElementById('notifSpike').checked, drop: document.getElementById('notifDrop').checked }; localStorage.setItem('glucoNotif_' + session.email, JSON.stringify(notif)); try { await apiPost("/api/preferences", { notify_high_glucose: notif.high, notify_low_glucose: notif.low, notify_spike: notif.spike, notify_drop: notif.drop, dark_mode_default: document.getElementById('notifDark').checked }); } catch (e) { console.warn("Failed to save preferences to API:", e); } }
+      async function handleDarkDefault(cb) { const theme = cb.checked ? 'dark' : 'light'; document.documentElement.setAttribute('data-theme', theme); document.getElementById('themeIcon').className = theme === 'dark' ? 'fa-solid fa-sun' : 'fa-solid fa-moon'; document.getElementById('themeLabel').innerText = theme === 'dark' ? 'DAY LEDGER' : 'NIGHT LEDGER'; localStorage.setItem('glucoTheme', theme); try { await apiPost("/api/preferences", { dark_mode_default: cb.checked }); } catch (e) { console.warn("Failed to save dark mode preference to API:", e); } }
+      function handleAvatarUpload(e) { const file = e.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = (ev) => { const data = ev.target.result; localStorage.setItem('glucoAvatar_' + session.email, data); const avatarEl = document.getElementById('avatarEl'); let img = avatarEl.querySelector('img'); if (!img) { img = document.createElement('img'); img.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:50%;'; avatarEl.insertBefore(img, avatarEl.firstChild); document.getElementById('avatarInitials').style.display = 'none'; } img.src = data; showToast('Profile photo updated!'); }; reader.readAsDataURL(file); }
+      function deleteAccount() { if (!confirm('Are you absolutely sure? All your data will be permanently deleted.')) return; if (prompt('Type DELETE to confirm:') !== 'DELETE') { showToast('Cancelled.', 'error'); return; } const users = JSON.parse(localStorage.getItem('glucoUsers') || '[]'); const filtered = users.filter(u => u.email !== session.email); localStorage.setItem('glucoUsers', JSON.stringify(filtered)); localStorage.removeItem('glucoSession'); localStorage.removeItem('glucoPrefs_' + session.email); localStorage.removeItem('glucoHistory_' + session.email); localStorage.removeItem('glucoNotif_' + session.email); localStorage.removeItem('glucoAvatar_' + session.email); sessionStorage.clear(); window.location.href = 'login.html'; }
+      function showToast(msg, type = 'success') { const t = document.getElementById('toast'); document.getElementById('toastMsg').innerText = msg; t.className = 'toast show' + (type === 'error' ? ' error' : ''); setTimeout(() => t.className = 'toast', 2800); }
+      loadProfile();
+    </script>
+  </body>
 </html>

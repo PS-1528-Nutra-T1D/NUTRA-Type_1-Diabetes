@@ -468,11 +468,24 @@
         justify-content: space-between;
         align-items: center;
         transition: all 0.1s;
+        color: var(--ink-black);
       }
 
       .btn-sample:hover {
         border-color: var(--border-heavy);
         background: var(--surface-card);
+      }
+
+      [data-theme="dark"] .btn-sample {
+        background: var(--surface-card);
+        border-color: var(--border-hairline);
+        color: var(--ink-black);
+      }
+
+      [data-theme="dark"] .btn-sample:hover {
+        background: var(--bg-paper);
+        border-color: var(--border-heavy);
+        color: var(--ink-black);
       }
 
       /* ── Right Canvas: Telemetry Output ── */
@@ -580,7 +593,12 @@
         margin-bottom: 2rem;
         border: 1px solid var(--border-hairline);
         padding: 1rem;
-        background: #fafaf8;
+        background: var(--bg-paper);
+      }
+
+      [data-theme="dark"] .chart-surface {
+        background: var(--surface-card);
+        border-color: var(--border-hairline);
       }
 
       /* ── Ledger Data Table ── */
@@ -609,7 +627,7 @@
       }
 
       .btn-table-action {
-        background: transparent;
+        background: var(--surface-card);
         border: 1px solid var(--border-heavy);
         padding: 0.25rem 0.6rem;
         font-family: var(--font-mono);
@@ -619,9 +637,21 @@
         display: inline-flex;
         align-items: center;
         gap: 0.35rem;
+        color: var(--ink-black);
       }
 
       .btn-table-action:hover {
+        background: var(--border-heavy);
+        color: var(--bg-paper);
+      }
+
+      [data-theme="dark"] .btn-table-action {
+        background: var(--surface-card);
+        border-color: var(--border-heavy);
+        color: var(--ink-black);
+      }
+
+      [data-theme="dark"] .btn-table-action:hover {
         background: var(--border-heavy);
         color: var(--bg-paper);
       }
@@ -1973,8 +2003,18 @@
       }
       fetchModelMetrics();
 
-      // ── Real-Time Clinical Threshold Alert System & Web Audio Chime ──
+      // ── Real-Time Clinical Threshold Alert System & WAV Alarm Buzzer ──
       let audioCtxInstance = null;
+      let alarmAudio = null;
+
+      function initAlarmAudio() {
+        if (!alarmAudio) {
+          alarmAudio = new Audio('./mixkit-digital-clock-digital-alarm-buzzer-992.wav');
+          alarmAudio.preload = 'auto';
+          alarmAudio.volume = 0.8;
+        }
+        return alarmAudio;
+      }
 
       function getAudioContext() {
         if (!audioCtxInstance) {
@@ -2050,8 +2090,23 @@
         }
       }
 
+      function playAlarmBuzzer() {
+        try {
+          const audio = initAlarmAudio();
+          audio.currentTime = 0;
+          const playPromise = audio.play();
+          if (playPromise !== undefined) {
+            playPromise.catch(err => {
+              console.warn("Alarm buzzer playback failed (autoplay policy):", err);
+            });
+          }
+        } catch (err) {
+          console.warn("Alarm buzzer error:", err);
+        }
+      }
+
       function testChimeSound() {
-        playWebAudioChime("hyper");
+        playAlarmBuzzer();
       }
 
       // ── Native Browser Desktop Notifications ──
@@ -2322,7 +2377,7 @@
           { name: "+120m Horizon", stats: s120 },
         ];
 
-        if (anyLow) {
+if (anyLow) {
           // Hypoglycemia Warning (Critical Low < 70 mg/dL)
           banner.className = "threshold-alert-banner hypo";
           icon.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i>';
@@ -2343,7 +2398,7 @@
           if (s120.hasLow)
             breaches.push(`+120m (${s120.min.toFixed(1)} mg/dL)`);
 
-          details.innerHTML = `Projected glucose breaches clinical minimum (<strong>&lt; ${lowThresh} mg/dL</strong>) reaching a nadir of <strong>${lowestVal.toFixed(1)} mg/dL</strong>. Breached horizons: <strong>${breaches.join(", ")}</strong>. Fast-acting carbohydrate intake recommended immediately.`;
+          details.innerHTML = `Projected glucose breaches clinical minimum (<strong>< ${lowThresh} mg/dL</strong>) reaching a nadir of <strong>${lowestVal.toFixed(1)} mg/dL</strong>. Breached horizons: <strong>${breaches.join(", ")}</strong>. Fast-acting carbohydrate intake recommended immediately.`;
 
           horizonConfigs.forEach((h) => {
             const chip = document.createElement("div");
@@ -2360,6 +2415,19 @@
             chips.appendChild(chip);
           });
 
+          if (soundEnabled) {
+            playWebAudioChime("hypo");
+            playAlarmBuzzer();
+          }
+          if (notifyEnabled) {
+            triggerBrowserNotification(
+              "GlucoDex: Critical Hypoglycemia Alert",
+              `Hypoglycemia forecast: Glucose drops to ${lowestVal.toFixed(1)} mg/dL (< ${lowThresh} mg/dL) in ${breaches.join(", ")}.`,
+            );
+          }
+            chips.appendChild(chip);
+          });
+
           if (soundEnabled) playWebAudioChime("hypo");
           if (notifyEnabled) {
             triggerBrowserNotification(
@@ -2367,7 +2435,7 @@
               `Hypoglycemia forecast: Glucose drops to ${lowestVal.toFixed(1)} mg/dL (< ${lowThresh} mg/dL) in ${breaches.join(", ")}.`,
             );
           }
-        } else if (anyHigh) {
+} else if (anyHigh) {
           // Hyperglycemia Warning (High Glucose Spike > 180 mg/dL)
           banner.className = "threshold-alert-banner hyper";
           icon.innerHTML = '<i class="fa-solid fa-arrow-trend-up"></i>';
@@ -2387,7 +2455,7 @@
           if (s120.hasHigh)
             breaches.push(`+120m (${s120.max.toFixed(1)} mg/dL)`);
 
-          details.innerHTML = `Projected glucose exceeds clinical threshold (<strong>&gt; ${highThresh} mg/dL</strong>) reaching a peak of <strong>${highestVal.toFixed(1)} mg/dL</strong>. Breached horizons: <strong>${breaches.join(", ")}</strong>. Monitor for insulin correction or exertion.`;
+          details.innerHTML = `Projected glucose exceeds clinical threshold (<strong>> ${highThresh} mg/dL</strong>) reaching a peak of <strong>${highestVal.toFixed(1)} mg/dL</strong>. Breached horizons: <strong>${breaches.join(", ")}</strong>. Monitor for insulin correction or exertion.`;
 
           horizonConfigs.forEach((h) => {
             const chip = document.createElement("div");
@@ -2398,6 +2466,19 @@
               chip.className = "horizon-chip safe";
               chip.innerHTML = `<i class="fa-solid fa-check"></i> ${h.name}: In-Range (${h.stats.min.toFixed(0)}-${h.stats.max.toFixed(0)})`;
             }
+            chips.appendChild(chip);
+          });
+
+          if (soundEnabled) {
+            playWebAudioChime("hyper");
+            playAlarmBuzzer();
+          }
+          if (notifyEnabled) {
+            triggerBrowserNotification(
+              "GlucoDex: Hyperglycemia Spike Warning",
+              `Hyperglycemia forecast: Glucose spikes to ${highestVal.toFixed(1)} mg/dL (> ${highThresh} mg/dL) in ${breaches.join(", ")}.`,
+            );
+          }
             chips.appendChild(chip);
           });
 
@@ -2567,6 +2648,19 @@
 
           // Update risk badge in system bar
           updateRiskBadge(data.risk_classification, data.chip_status);
+
+          // Play alarm buzzer for spike/dip based on backend risk classification
+          const soundEnabled = document.getElementById("toggleSound").checked;
+          const riskClassification = data.risk_classification || "stable";
+          const isBreach = riskClassification === "hyper" || 
+                          riskClassification === "critical_hyper" || 
+                          riskClassification === "rapid_rise" || 
+                          riskClassification === "hypo" || 
+                          riskClassification === "critical_hypo" || 
+                          riskClassification === "rapid_drop";
+          if (soundEnabled && isBreach) {
+            playAlarmBuzzer();
+          }
 
           // Update Model R2 score if returned from backend
           if (data.metrics && data.metrics.r2_score) {
