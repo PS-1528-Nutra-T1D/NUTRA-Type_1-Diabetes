@@ -2425,16 +2425,6 @@ if (anyLow) {
               `Hypoglycemia forecast: Glucose drops to ${lowestVal.toFixed(1)} mg/dL (< ${lowThresh} mg/dL) in ${breaches.join(", ")}.`,
             );
           }
-            chips.appendChild(chip);
-          });
-
-          if (soundEnabled) playWebAudioChime("hypo");
-          if (notifyEnabled) {
-            triggerBrowserNotification(
-              "GlucoDex: Critical Hypoglycemia Alert",
-              `Hypoglycemia forecast: Glucose drops to ${lowestVal.toFixed(1)} mg/dL (< ${lowThresh} mg/dL) in ${breaches.join(", ")}.`,
-            );
-          }
 } else if (anyHigh) {
           // Hyperglycemia Warning (High Glucose Spike > 180 mg/dL)
           banner.className = "threshold-alert-banner hyper";
@@ -2473,16 +2463,6 @@ if (anyLow) {
             playWebAudioChime("hyper");
             playAlarmBuzzer();
           }
-          if (notifyEnabled) {
-            triggerBrowserNotification(
-              "GlucoDex: Hyperglycemia Spike Warning",
-              `Hyperglycemia forecast: Glucose spikes to ${highestVal.toFixed(1)} mg/dL (> ${highThresh} mg/dL) in ${breaches.join(", ")}.`,
-            );
-          }
-            chips.appendChild(chip);
-          });
-
-          if (soundEnabled) playWebAudioChime("hyper");
           if (notifyEnabled) {
             triggerBrowserNotification(
               "GlucoDex: Hyperglycemia Spike Warning",
